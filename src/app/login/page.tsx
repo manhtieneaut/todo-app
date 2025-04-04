@@ -1,39 +1,50 @@
 "use client";
 
-import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/app/supabaseClient"; // Đảm bảo đường dẫn đúng
+import useAuthStore from "@/lib/authStore"; 
 
-const supabaseUrl = 'https://rcymjxtpdbbhdkppcakr.supabase.co'; // Thay bằng URL của bạn
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjeW1qeHRwZGJiaGRrcHBjYWtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1NTc5MjEsImV4cCI6MjA1OTEzMzkyMX0.aKlG0gau8DiDHaanV-_T5VITcnpFyOkmYN8J9pPp854'; // Thay bằng khóa của bạn
-const supabase = createClient(supabaseUrl, supabaseKey);
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+export default function AuthForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLogin, setIsLogin] = useState(true);
+  const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const { setUser } = useAuthStore(); // sử dụng store zustand để cập nhật user
+
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
+    setError("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    if (isLogin) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    console.log("Login response:", { data, error });
-
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(error.message);
+      } else {
+        // Lưu thông tin người dùng vào state
+        setUser(data?.user); // Cập nhật state với thông tin user
+        localStorage.setItem("access_token", data?.session?.access_token || "");
+        
+        alert("Đăng nhập thành công!");
+        router.push("/"); // Chuyển hướng đến trang chính
+      }
     } else {
-      // Lưu JWT vào localStorage
-      if (data?.session) {
-        localStorage.setItem('access_token', data.session.access_token);
-        localStorage.setItem('refresh_token', data.session.refresh_token);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-        alert('Đăng nhập thành công!');
-        console.log('User data:', data);
-        // Chuyển hướng người dùng đến trang khác sau khi đăng nhập thành công (nếu cần)
-        // window.location.href = '/dashboard'; // Ví dụ
+      if (error) setError(error.message);
+      else {
+        alert("Đăng ký thành công! Kiểm tra email của bạn.");
+        setIsLogin(true); // Chuyển về trạng thái đăng nhập
       }
     }
   };
@@ -41,38 +52,43 @@ export default function Login() {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-lg">
-        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Đăng nhập</h2>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              placeholder="Mật khẩu"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <button
-              type="submit"
-              className="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Đăng nhập
-            </button>
-          </div>
+        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
+          {isLogin ? "Đăng nhập" : "Đăng ký"}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="password"
+            placeholder="Mật khẩu"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {isLogin ? "Đăng nhập" : "Đăng ký"}
+          </button>
         </form>
         {error && <p className="text-red-500 text-center mt-2">{error}</p>}
+        <p className="text-center mt-4">
+          {isLogin ? "Chưa có tài khoản? " : "Đã có tài khoản? "}
+          <button
+            className="text-blue-500 hover:underline"
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin ? "Đăng ký" : "Đăng nhập"}
+          </button>
+        </p>
       </div>
     </div>
   );
