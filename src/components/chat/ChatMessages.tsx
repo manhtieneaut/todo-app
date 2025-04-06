@@ -8,6 +8,16 @@ interface MessageListProps {
   conversationId: string;
 }
 
+const sanitizeFileName = (fileName: string) => {
+  return fileName
+    .normalize('NFD') // Chuẩn hóa Unicode để loại bỏ dấu
+    .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu tiếng Việt
+    .toLowerCase() // Chuyển tất cả ký tự thành chữ thường
+    .replace(/[^a-z0-9.-]/g, '-') // Thay thế ký tự không hợp lệ bằng dấu gạch ngang
+    .replace(/-+/g, '-') // Loại bỏ dấu gạch ngang thừa
+    .replace(/^-|-$/g, ''); // Loại bỏ dấu gạch ngang ở đầu và cuối
+};
+
 const MessageList: React.FC<MessageListProps> = ({ conversationId }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>('');
@@ -88,21 +98,9 @@ const MessageList: React.FC<MessageListProps> = ({ conversationId }) => {
     };
   }, [conversationId]);
 
-  // Hàm chuẩn hóa tên file
-  const sanitizeFileName = (fileName: string) => {
-    return fileName
-      .normalize('NFD') // Chuẩn hóa Unicode để loại bỏ dấu
-      .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu tiếng Việt
-      .toLowerCase() // Chuyển tất cả ký tự thành chữ thường
-      .replace(/[^a-z0-9.-]/g, '-') // Thay thế ký tự không hợp lệ bằng dấu gạch ngang
-      .replace(/-+/g, '-') // Loại bỏ dấu gạch ngang thừa
-      .replace(/^-|-$/g, ''); // Loại bỏ dấu gạch ngang ở đầu và cuối
-  };
-
   // Hàm upload file lên Supabase Storage
   const uploadFileToBucket = async (file: File, conversationId: string) => {
-    const sanitizedFileName = sanitizeFileName(file.name); // Chuẩn hóa tên file
-    const fileName = `${conversationId}/${Date.now()}-${sanitizedFileName}`; // Tạo tên file duy nhất
+    const fileName = `${Date.now()}-${sanitizeFileName(file.name)}`; // Tạo tên file bằng timestamp và tên file gốc
 
     const { data, error } = await supabase.storage
       .from('chat-files') // Tên bucket
@@ -180,16 +178,54 @@ const MessageList: React.FC<MessageListProps> = ({ conversationId }) => {
                     : 'bg-gray-200 text-gray-800'
                 }`}
               >
-                <p>{msg.message}</p>
+                {/* Hiển thị tin nhắn văn bản */}
+                {msg.message && <p className="break-words">{msg.message}</p>}
+
+                {/* Hiển thị file đính kèm */}
                 {msg.file_url && (
-                  <a
-                    href={`${supabase.storage.from('chat-files').getPublicUrl(msg.file_url).data.publicUrl}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                  >
-                    View Attachment
-                  </a>
+                  <div className="mt-2 bg-gray-100 p-2 rounded-lg">
+                    {/* Kiểm tra nếu là hình ảnh */}
+                    {msg.file_url.endsWith('.jpg') ||
+                    msg.file_url.endsWith('.png') ||
+                    msg.file_url.endsWith('.jpeg') ? (
+                      <img
+                        src={`${supabase.storage
+                          .from('chat-files')
+                          .getPublicUrl(msg.file_url).data.publicUrl}`}
+                        alt="file preview"
+                        className="max-w-full h-auto rounded-md"
+                      />
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        {/* Biểu tượng tệp đính kèm */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-gray-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M13 10V3a2 2 0 00-2-2H3a2 2 0 00-2 2v18a2 2 0 002 2h12a2 2 0 002-2V11a2 2 0 00-2-2h-5"
+                          />
+                        </svg>
+                        {/* Hiển thị tên file */}
+                        <a
+                          href={`${supabase.storage
+                            .from('chat-files')
+                            .getPublicUrl(msg.file_url).data.publicUrl}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 text-sm underline"
+                        >
+                          {msg.file_url.split('/').pop()}
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </li>

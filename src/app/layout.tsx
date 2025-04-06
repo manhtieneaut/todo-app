@@ -58,6 +58,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Nhắn tin
                 </Link>
               </li>
+              <li>
+                <Link href="/task" className="block text-lg hover:bg-gray-700 p-2 rounded-md">
+                  Công việc
+                </Link>
+              </li>
             </ul>
           </div>
 
