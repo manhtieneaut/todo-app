@@ -1,4 +1,4 @@
-// middleware.ts (hoặc middleware.js)
+// middleware.ts (vẫn sử dụng cookies)
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 

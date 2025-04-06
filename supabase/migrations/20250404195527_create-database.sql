@@ -16,10 +16,8 @@ CREATE TABLE public.conversations (
 
 -- Bảng cho conversation_members (dùng trong real-time)
 CREATE TABLE public.conversation_members (
-  id serial PRIMARY KEY,
   conversation_id uuid REFERENCES public.conversations(id),
   user_id uuid REFERENCES public.users(id),
-  joined_at timestamp DEFAULT current_timestamp
 );
 
 -- Bảng cho messages (dùng trong real-time)

@@ -1,62 +1,60 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabaseClient"; // Đảm bảo bạn đã cài Supabase client
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ProfilePage() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
-    // Hàm lấy thông tin người dùng từ Supabase
     const fetchUserInfo = async () => {
-      const token = document.cookie.split(';').find(c => c.trim().startsWith('jwt_token='));
-      if (!token) {
+      // Lấy user hiện tại từ Supabase (nó sẽ lấy từ bộ nhớ cache/session local)
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("Không thể lấy thông tin người dùng:", userError);
         alert("Bạn cần đăng nhập!");
+        setLoading(false);
         return;
       }
 
-      const access_token = token.split('=')[1];
-
-      // Sử dụng token để lấy session người dùng
-      const { data: session, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !session) {
-        console.error("Lỗi khi lấy session:", sessionError);
-        return;
-      }
-
-      const userId = session?.session?.user?.id; // Lấy user ID từ session
-
-      // Truy vấn bảng public.users để lấy thông tin người dùng
+      // Truy vấn bảng profiles (hoặc users tùy bạn) để lấy thêm thông tin
       const { data, error } = await supabase
-        .from("users") // Truy vấn bảng public.users
+        .from("users") // Đổi lại đúng tên bảng bạn đang dùng
         .select("*")
-        .eq("id", userId) // Sử dụng userId trong truy vấn
+        .eq("id", user.id)
         .single();
 
-      if (data) {
-        setUserInfo(data);
+      if (error) {
+        console.error("Lỗi khi truy vấn thông tin người dùng:", error);
       } else {
-        console.error("Lỗi khi lấy thông tin người dùng:", error);
+        setUserInfo(data);
       }
+
       setLoading(false);
     };
 
     fetchUserInfo();
-  }, [supabase]);
+  }, []);
 
   if (loading) {
     return <p>Đang tải thông tin người dùng...</p>;
   }
 
   if (!userInfo) {
-    return <p>Không có thông tin người dùng.</p>;
+    return <p>Không tìm thấy thông tin người dùng.</p>;
   }
 
-  // In trực tiếp dữ liệu JSON
   return (
-    <pre>{JSON.stringify(userInfo, null, 2)}</pre>
+    <div className="p-6 bg-white rounded-xl shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Thông tin người dùng</h1>
+      <pre className="bg-gray-100 p-4 rounded-lg text-sm overflow-auto">
+        {JSON.stringify(userInfo, null, 2)}
+      </pre>
+    </div>
   );
 }

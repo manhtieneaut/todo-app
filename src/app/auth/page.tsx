@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false); // Điều khiển form đăng ký hay đăng nhập
-  const supabase = createClient();
   const router = useRouter();
 
   const handleAuth = async () => {
@@ -27,8 +26,10 @@ export default function AuthPage() {
       alert(isSignUp ? "Đăng ký thành công!" : "Đăng nhập thành công!");
       const { session } = response.data;
 
-      // Lưu token vào cookie khi đăng nhập thành công
-      document.cookie = `jwt_token=${session?.access_token}; path=/; max-age=3600`; // token hết hạn sau 1 giờ
+      // Lưu token vào localStorage khi đăng nhập thành công
+      if (session?.access_token) {
+        localStorage.setItem("jwt_token", session.access_token);
+      }
 
       // Chuyển hướng đến trang chính sau khi đăng nhập thành công
       router.push("/");
