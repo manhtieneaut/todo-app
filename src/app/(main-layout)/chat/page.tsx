@@ -4,11 +4,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Conversation } from './type'; // Import kiểu dữ liệu
-import Sidebar from '../../components/chat/Sidebar';
-import ChatHeader from '../../components/chat/ChatHeader';
-import CreateConversationModal from '../../components/chat/CreateConversationModal';
-import AddUserModal from '../../components/chat/AddUserModal';
-import ChatMesages from '@/components/chat/ChatMessages'; // Import component ChatMessages
+import Sidebar from './Sidebar';
+import ChatHeader from './ChatHeader';
+import CreateConversationModal from './CreateConversationModal';
+import AddUserModal from './AddUserModal';
+import ChatMesages from '@/app/(main-layout)/chat/ChatMessages'; // Import component ChatMessages
 
 const ChatPage: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);

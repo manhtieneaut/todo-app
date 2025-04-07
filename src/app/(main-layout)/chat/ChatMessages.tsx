@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Message } from '@/app/chat/type'; // Import kiểu dữ liệu
+import { Message } from '@/app/(main-layout)/chat/type'; // Import kiểu dữ liệu
 
 interface MessageListProps {
   conversationId: string;
