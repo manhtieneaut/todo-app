@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
 
   if (!token) {
     // Nếu không có token, chuyển hướng đến trang login
-    return NextResponse.redirect(new URL("/auth", request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Nếu có token, cho phép truy cập trang

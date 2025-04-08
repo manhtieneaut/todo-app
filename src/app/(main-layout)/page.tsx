@@ -12,12 +12,12 @@ export default function HomePage({ children }: { children: React.ReactNode }) {
 
       // Nếu không có token, chuyển hướng tới trang đăng nhập
       if (!sessionToken) {
-        redirect("/auth");
+        redirect("/login");
       } else {
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error || !session) {
-          redirect("/auth");
+          redirect("/login");
         }
       }
     };
