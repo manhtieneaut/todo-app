@@ -54,7 +54,6 @@ export default function MainLayout({ children }: Readonly<{ children: React.Reac
           <Link href="/profile" className="hover:text-blue-500">Profile</Link>
           <Link href="/chat" className="hover:text-blue-500">Chats</Link>
           <Link href="/task" className="hover:text-blue-500">Tasks</Link>
-          <Link href="/todos" className="hover:text-blue-500">Todos</Link>
         </nav>
       </aside>
 
