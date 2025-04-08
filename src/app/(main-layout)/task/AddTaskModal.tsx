@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { addTask } from './api';
-import { useTaskStore } from './store';
+import { addTask } from '../../../api/taskApi';
+import { useTaskStore } from '../../../store/task';
 
 interface AddTaskModalProps {
   onClose: () => void;

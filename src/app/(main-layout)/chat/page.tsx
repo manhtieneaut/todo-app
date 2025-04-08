@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Layout, Menu, List, Input, Button, Typography, Upload, message as antdMessage, Modal } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabaseClient';
-import { Message, Conversation } from './type';
+import { Message, Conversation } from '../../../types/chat';
 
 import {
   fetchCurrentUser,
@@ -15,11 +15,11 @@ import {
   createConversation,
   deleteConversation,
   addUserToConversation
-} from './api';
+} from '../../../api/chatApi';
 
-import { useChatStore } from './store';
-import { useAuthStore } from '@/app/(auth-layout)/login/store';
-import SearchUser from '@/app/(main-layout)/(component)/SearchUser';
+import { useChatStore } from '../../../store/chat';
+import { useAuthStore } from '@/store/auth';
+import SearchUser from '@/component/SearchUser';
 
 const { Header, Sider, Content } = Layout;
 const { TextArea } = Input;
@@ -47,12 +47,12 @@ const ChatPage = () => {
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const currentUser = useAuthStore((state) => state.currentUser);
-  
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // 👉 Fetch initial data and set default conversation
   useEffect(() => {
     const init = async () => {
       try {
@@ -61,12 +61,17 @@ const ChatPage = () => {
 
         const convs = await fetchConversations();
         setConversations(convs);
+
+        // ✅ Set default selected conversation if exists
+        if (convs.length > 0) {
+          setSelectedConversation(convs[0]);
+        }
       } catch (err) {
         antdMessage.error('Failed to load initial data');
       }
     };
     init();
-  }, [setCurrentUserId, setConversations]);
+  }, [setCurrentUserId, setConversations, setSelectedConversation]);
 
   useEffect(() => {
     if (!selectedConversation) return;
@@ -105,7 +110,7 @@ const ChatPage = () => {
   }, [selectedConversation, setMessages, addMessage]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() && !selectedFile || !selectedConversation || !currentUserId) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedConversation || !currentUserId) return;
 
     try {
       let fileUrl = null;
@@ -128,9 +133,7 @@ const ChatPage = () => {
     }
 
     try {
-      // Step 1: Create the conversation
       const data = await createConversation(newConversationName);
-      // Step 3: Update state and UI
       setConversations([...conversations, ...data]);
       setNewConversationName('');
       setShowCreateModal(false);
@@ -182,11 +185,11 @@ const ChatPage = () => {
             const conv = conversations.find(c => c.id === key);
             setSelectedConversation(conv || null);
           }}
-        >
-          {conversations.map((conv) => (
-            <Menu.Item key={conv.id}>{conv.name}</Menu.Item>
-          ))}
-        </Menu>
+          items={conversations.map((conv) => ({
+            key: conv.id,
+            label: conv.name,
+          }))}
+        />
       </Sider>
 
       <Layout>

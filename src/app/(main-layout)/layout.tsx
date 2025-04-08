@@ -1,100 +1,162 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
-import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 
-export default function MainLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [user, setUser] = useState<any | null>(null);
-  const [userInfo, setUserInfo] = useState<any | null>(null);
-  const pathname = usePathname(); // Lấy đường dẫn hiện tại
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+import { useAuthStore } from "@/store/auth";
+import { useProfileStore } from "@/store/profile";
+import { getUserInfo } from "@/api/profileApi";
+import AuthGuard from "@/component/AuthGuard";
+import {
+  Home,
+  User,
+  MessageSquare,
+  ClipboardList,
+  LogOut,
+} from "lucide-react";
+
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { currentUser, setCurrentUser } = useAuthStore();
+  const { userInfo, setUserInfo, setLoading } = useProfileStore();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(prev => !prev);
+  };
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const initUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
       if (user) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("full_name, avatar_url")
-          .eq("id", user.id)
-          .single();
+        setCurrentUser({ id: user.id, email: user.email! });
 
-        if (!error) {
-          setUserInfo(data);
+        try {
+          setLoading(true);
+          const profile = await getUserInfo();
+          setUserInfo(profile);
+        } finally {
+          setLoading(false);
         }
       }
     };
 
-    fetchUser();
-  }, []);
+    if (!currentUser) initUser();
+  }, [currentUser]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
+    setCurrentUser(null);
     setUserInfo(null);
+    localStorage.removeItem("jwt_token");
+    router.push("/login");
   };
 
-  // Chuyển đường dẫn thành breadcrumb
   const breadcrumb = pathname
     .split("/")
-    .filter((segment) => segment) // Loại bỏ các phần tử rỗng
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1)) // Viết hoa chữ cái đầu
-    .join(" > ");
+    .filter(Boolean)
+    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" / ");
+
+  const menu = [
+    { label: "Home", icon: <Home size={18} />, href: "/" },
+    { label: "Profile", icon: <User size={18} />, href: "/profile" },
+    { label: "Chats", icon: <MessageSquare size={18} />, href: "/chat" },
+    { label: "Tasks", icon: <ClipboardList size={18} />, href: "/task" },
+  ];
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-100 text-gray-800 flex flex-col p-4 shadow-md">
-        <h2 className="text-2xl font-bold mb-6">Menu</h2>
-        <nav className="flex flex-col gap-4">
-          <Link href="/" className="hover:text-blue-500">Home</Link>
-          <Link href="/profile" className="hover:text-blue-500">Profile</Link>
-          <Link href="/chat" className="hover:text-blue-500">Chats</Link>
-          <Link href="/task" className="hover:text-blue-500">Tasks</Link>
-        </nav>
-      </aside>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="bg-white text-gray-800 p-4 flex justify-between items-center shadow-md">
-          <h1 className="text-lg font-bold">{breadcrumb || "Home"}</h1>
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                {/* Hiển thị avatar */}
-                <Link href="/profile">
-                  <img
-                    src={userInfo?.avatar_url || "/default-avatar.png"}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full object-cover border cursor-pointer"
-                  />
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition text-white"
+    <AuthGuard>
+      <div className="flex h-screen bg-gray-100 text-gray-900">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r shadow-md p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-purple-600 mb-10 tracking-tight">MyApp</h2>
+            <nav className="flex flex-col gap-3">
+              {menu.map(item => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-100 transition ${pathname === item.href ? "bg-purple-100 text-purple-700" : "text-gray-700"
+                    }`}
                 >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Link href="/login">
-                <button className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600 transition text-white">
-                  Login
-                </button>
-              </Link>
-            )}
+                  {item.icon}
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
-        </header>
+        </aside>
 
-        {/* Main content */}
-        <main className="flex-1 p-6 overflow-auto bg-gray-50">
-          {children}
-        </main>
+        {/* Main layout */}
+        <div className="flex-1 flex flex-col">
+
+          {/* Header */}
+          <header className="bg-white border-b shadow-sm px-6 py-4 flex items-center justify-between relative">
+            <h1 className="text-lg font-semibold text-gray-800">{breadcrumb || "Dashboard"}</h1>
+            <div className="flex items-center gap-3 relative">
+              <span className="text-sm text-gray-600 hidden sm:block">{currentUser?.email}</span>
+
+              <img
+                onClick={toggleDropdown}
+                src={userInfo?.avatar_url || "/default-avatar.png"}
+                alt="avatar"
+                className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-purple-300 transition cursor-pointer"
+              />
+
+              {isDropdownOpen && (
+                <div className="absolute top-12 right-0 w-44 bg-white border rounded-md shadow-lg z-50">
+                  <Link
+                    href="/profile"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleLogout();
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    Logout
+                  </Link>
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    Close
+                  </Link>
+                </div>
+              )}
+
+            </div>
+          </header>
+          {/* Main content */}
+          <main className="flex-1 overflow-y-auto p-6 bg-gray-50">{children}</main>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

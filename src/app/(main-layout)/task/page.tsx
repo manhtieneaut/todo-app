@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchTasks, deleteTask } from './api';
-import { useTaskStore } from './store';
+import { fetchTasks, deleteTask } from '../../../api/taskApi';
+import { useTaskStore } from '../../../store/task';
 import AddTaskModal from './AddTaskModal';
-import { Task } from './store';
+import { Task } from '../../../store/task';
 
 export default function TaskPage() {
   const tasks = useTaskStore((state) => state.tasks);

@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { useAuthStore } from './store';
+import { useAuthStore } from '../../store/auth';
+import { useProfileStore } from '../../store/profile';
+import { getUserInfo } from '../../api/profileApi';
 import { Form, Input, Button, Typography, message, Card } from 'antd';
 
 const { Title } = Typography;
@@ -12,6 +14,8 @@ export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
   const setCurrentUser = useAuthStore((state) => state.setCurrentUser);
+  const setUserInfo = useProfileStore((state) => state.setUserInfo);
+  const setLoading = useProfileStore((state) => state.setLoading);
 
   const handleAuth = async (values: { email: string; password: string }) => {
     const { email, password } = values;
@@ -30,6 +34,17 @@ export default function AuthPage() {
     if (user) {
       setCurrentUser({ id: user.id, email: user.email! });
       localStorage.setItem('jwt_token', response.data.session?.access_token ?? '');
+
+      try {
+        setLoading(true);
+        const profile = await getUserInfo();
+        setUserInfo(profile);
+      } catch (err: any) {
+        message.error(err.message || 'Không thể lấy thông tin profile.');
+      } finally {
+        setLoading(false);
+      }
+
       message.success(isSignUp ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
       router.push('/');
     }
