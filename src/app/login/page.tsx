@@ -7,6 +7,12 @@ import { useAuthStore } from '../../store/auth';
 import { useProfileStore } from '../../store/profile';
 import { getUserInfo } from '../../api/profileApi';
 import { Form, Input, Button, Typography, message, Card } from 'antd';
+import { jwtDecode } from 'jwt-decode';
+
+// Định nghĩa kiểu dữ liệu cho JWT với user_role
+interface CustomJwtPayload {
+  user_role: string;
+}
 
 const { Title } = Typography;
 
@@ -20,6 +26,7 @@ export default function AuthPage() {
   const handleAuth = async (values: { email: string; password: string }) => {
     const { email, password } = values;
 
+    // Đăng nhập hoặc đăng ký
     const response = isSignUp
       ? await supabase.auth.signUp({ email, password })
       : await supabase.auth.signInWithPassword({ email, password });
@@ -29,18 +36,32 @@ export default function AuthPage() {
       return;
     }
 
-    const { user } = response.data;
+    const { user, session } = response.data;
 
-    if (user) {
+    if (user && session) {
       setCurrentUser({ id: user.id, email: user.email! });
-      localStorage.setItem('jwt_token', response.data.session?.access_token ?? '');
 
+      // Lưu JWT token vào localStorage
+      const jwtToken = session.access_token;
+      localStorage.setItem('jwt_token', jwtToken);
+
+      // Giải mã JWT để lấy user_role
       try {
+        const decodedToken = jwtDecode<CustomJwtPayload>(jwtToken);
+        const userRole = decodedToken.user_role;
+
+        console.log('User Role:', userRole); // In ra user role từ JWT
+
+        // Lưu thông tin user role vào state hoặc localStorage nếu cần
+        // (Cập nhật thêm vào state nếu cần sử dụng user_role sau này)
+        localStorage.setItem('user_role', userRole);
+
+        // Lấy thông tin profile của người dùng
         setLoading(true);
         const profile = await getUserInfo();
         setUserInfo(profile);
-      } catch (err: any) {
-        message.error(err.message || 'Không thể lấy thông tin profile.');
+      } catch (err) {
+        message.error('Lỗi giải mã token hoặc lấy thông tin người dùng');
       } finally {
         setLoading(false);
       }
