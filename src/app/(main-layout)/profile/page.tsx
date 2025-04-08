@@ -1,118 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useEffect } from "react";
 import { Avatar, Button, Card, Form, Input, message, Spin, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-
-const sanitizeFileName = (fileName: string) => {
-  return fileName
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9.-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-};
-
-const uploadAvatar = async (file: File) => {
-  try {
-    const sanitizedFileName = sanitizeFileName(file.name);
-    const fileName = `${Date.now()}-${sanitizedFileName}`;
-
-    const { data, error } = await supabase.storage
-      .from("profile")
-      .upload(fileName, file);
-
-    if (error) {
-      console.error("Error uploading avatar:", error.message);
-      return null;
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("profile")
-      .getPublicUrl(data.path);
-
-    return publicUrlData.publicUrl;
-  } catch (err) {
-    console.error("Unexpected error uploading avatar:", err);
-    return null;
-  }
-};
+import { getUserInfo, updateUserInfo, uploadAvatar } from "./api";
+import { useProfileStore } from "./store";
 
 export default function ProfilePage() {
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const {
+    userInfo,
+    loading,
+    editMode,
+    avatarFile,
+    setUserInfo,
+    setLoading,
+    toggleEditMode,
+    setAvatarFile,
+  } = useProfileStore();
 
   const [form] = Form.useForm();
-
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        message.error("Bạn cần đăng nhập!");
+    const fetchData = async () => {
+      try {
+        const user = await getUserInfo();
+        setUserInfo(user);
+  
+        setTimeout(() => {
+          form.setFieldsValue({
+            full_name: user.full_name,
+            phone: user.phone,
+            dob: user.dob,
+            gender: user.gender,
+            bio: user.bio,
+          });
+        }, 0);
+      } catch (err: any) {
+        message.error(err.message || "Lỗi khi tải thông tin.");
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user:", error);
-      } else {
-        setUserInfo(data);
-        form.setFieldsValue({
-          full_name: data.full_name,
-          phone: data.phone,
-          dob: data.dob,
-          gender: data.gender,
-          bio: data.bio,
-        });
-      }
-
-      setLoading(false);
     };
-
-    fetchUserInfo();
-  }, [form]);
+  
+    fetchData();
+  }, [form, setUserInfo, setLoading]);
+  
 
   const handleSave = async () => {
     if (!userInfo) return;
 
     let avatarUrl = userInfo.avatar_url;
 
-    if (avatarFile) {
-      const uploadedUrl = await uploadAvatar(avatarFile);
-      if (!uploadedUrl) {
-        message.error("Lỗi khi upload avatar. Vui lòng thử lại.");
-        return;
+    try {
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar(avatarFile);
+        if (!avatarUrl) throw new Error("Không thể upload avatar.");
       }
-      avatarUrl = uploadedUrl;
-    }
 
-    const values = form.getFieldsValue();
-    const { error } = await supabase
-      .from("users")
-      .update({ ...values, avatar_url: avatarUrl })
-      .eq("id", userInfo.id);
+      const values = form.getFieldsValue();
+      await updateUserInfo(userInfo.id, { ...values, avatar_url: avatarUrl });
 
-    if (error) {
-      message.error("Lỗi khi cập nhật thông tin.");
-    } else {
       setUserInfo({ ...userInfo, ...values, avatar_url: avatarUrl });
-      setEditMode(false);
       setAvatarFile(null);
+      toggleEditMode();
       message.success("Cập nhật thông tin thành công!");
+    } catch (err: any) {
+      message.error(err.message || "Lỗi khi cập nhật thông tin.");
     }
   };
 
@@ -129,7 +81,7 @@ export default function ProfilePage() {
       <Card
         title="Thông tin cá nhân"
         extra={
-          <Button type="link" onClick={() => setEditMode(!editMode)}>
+          <Button type="link" onClick={toggleEditMode}>
             {editMode ? "Huỷ" : "Chỉnh sửa"}
           </Button>
         }
@@ -140,7 +92,7 @@ export default function ProfilePage() {
             src={
               avatarFile
                 ? URL.createObjectURL(avatarFile)
-                : userInfo.avatar_url || "/default-avatar.png"
+                : userInfo?.avatar_url || "/default-avatar.png"
             }
           />
           {editMode && (
@@ -180,19 +132,19 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-4">
             <p>
-              <strong>Họ và tên:</strong> {userInfo.full_name || "Chưa cập nhật"}
+              <strong>Họ và tên:</strong> {userInfo?.full_name || "Chưa cập nhật"}
             </p>
             <p>
-              <strong>Số điện thoại:</strong> {userInfo.phone || "Chưa cập nhật"}
+              <strong>Số điện thoại:</strong> {userInfo?.phone || "Chưa cập nhật"}
             </p>
             <p>
-              <strong>Ngày sinh:</strong> {userInfo.dob || "Chưa cập nhật"}
+              <strong>Ngày sinh:</strong> {userInfo?.dob || "Chưa cập nhật"}
             </p>
             <p>
-              <strong>Giới tính:</strong> {userInfo.gender || "Chưa cập nhật"}
+              <strong>Giới tính:</strong> {userInfo?.gender || "Chưa cập nhật"}
             </p>
             <p>
-              <strong>Tiểu sử:</strong> {userInfo.bio || "Chưa cập nhật"}
+              <strong>Tiểu sử:</strong> {userInfo?.bio || "Chưa cập nhật"}
             </p>
           </div>
         )}

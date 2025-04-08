@@ -1,68 +1,53 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useEffect, useState } from 'react';
+import { fetchTasks, deleteTask } from './api';
+import { useTaskStore } from './store';
 import AddTaskModal from './AddTaskModal';
+import { Task } from './store';
 
 export default function TaskPage() {
-  const [tasks, setTasks] = useState<any[]>([]); // Danh sách công việc
-  const [selectedTask, setSelectedTask] = useState<any | null>(null); // Công việc được chọn
+  const tasks = useTaskStore((state) => state.tasks);
+  const setTasks = useTaskStore((state) => state.setTasks);
+  const removeTask = useTaskStore((state) => state.deleteTask);
+
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Trạng thái mở/đóng modal thêm task
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchTasks = async () => {
+    const load = async () => {
       try {
-        const { data, error } = await supabase
-          .from("tasks")
-          .select('id, title, description, status, due_date');
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          setTasks(data);
-        }
-      } catch (error: any) {
-        setError(error.message);
+        const tasks = await fetchTasks();
+        setTasks(tasks);
+      } catch (err: any) {
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTasks();
-  }, []); // Chạy một lần khi component được render
-
-  const closeModal = () => {
-    setSelectedTask(null);
-  };
-
-  const handleTaskAdded = (task: any) => {
-    setTasks((prevTasks) => [...prevTasks, task]); // Cập nhật danh sách công việc
-  };
+    load();
+  }, [setTasks]);
 
   const handleDeleteTask = async (taskId: string) => {
     const confirmDelete = confirm("Bạn có chắc chắn muốn xóa công việc này?");
     if (!confirmDelete) return;
 
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .delete()
-        .eq("id", taskId);
-
-      if (error) {
-        throw error;
-      }
-
-      // Cập nhật danh sách công việc sau khi xóa
-      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-      closeModal(); // Đóng modal nếu đang mở
+      await deleteTask(taskId);
+      removeTask(taskId);
+      setSelectedTask(null);
     } catch (error: any) {
       alert(`Lỗi khi xóa công việc: ${error.message}`);
     }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Không có';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('vi-VN').format(date); // -> 08/04/2025
   };
 
   if (loading) {
@@ -70,14 +55,13 @@ export default function TaskPage() {
   }
 
   if (error) {
-    return <div className="flex justify-center items-center h-screen text-red-500">Lỗi khi tải công việc: {error}</div>;
+    return <div className="flex justify-center items-center h-screen text-red-500">Lỗi: {error}</div>;
   }
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-center mb-8">Danh sách công việc</h1>
 
-      {/* Nút mở modal thêm task */}
       <div className="flex justify-end mb-4">
         <button
           onClick={() => setIsModalOpen(true)}
@@ -87,7 +71,6 @@ export default function TaskPage() {
         </button>
       </div>
 
-      {/* Danh sách công việc */}
       <table className="table-auto w-full bg-white shadow-md rounded-lg overflow-hidden">
         <thead className="bg-gray-200">
           <tr>
@@ -100,16 +83,13 @@ export default function TaskPage() {
         </thead>
         <tbody>
           {tasks.map((task) => (
-            <tr
-              key={task.id}
-              className="hover:bg-gray-100"
-            >
+            <tr key={task.id} className="hover:bg-gray-100">
               <td className="px-4 py-2 cursor-pointer" onClick={() => setSelectedTask(task)}>
                 {task.title}
               </td>
               <td className="px-4 py-2">{task.description || "Không có mô tả"}</td>
               <td className="px-4 py-2">{task.status}</td>
-              <td className="px-4 py-2">{task.due_date || "Không có"}</td>
+              <td className="px-4 py-2">{formatDate(task.due_date)}</td>
               <td className="px-4 py-2">
                 <button
                   onClick={() => handleDeleteTask(task.id)}
@@ -130,12 +110,11 @@ export default function TaskPage() {
             <h2 className="text-2xl font-bold mb-4">{selectedTask.title}</h2>
             <p className="mb-4"><strong>Mô tả:</strong> {selectedTask.description || "Không có mô tả"}</p>
             <p className="mb-4"><strong>Trạng thái:</strong> {selectedTask.status}</p>
-            <p className="mb-4"><strong>Thời hạn:</strong> {selectedTask.due_date || "Không có"}</p>
+            <p className="mb-4"><strong>Thời hạn:</strong> {formatDate(selectedTask.due_date)}</p>
 
-            {/* Nút đóng modal */}
             <div className="flex justify-end mt-4">
               <button
-                onClick={closeModal}
+                onClick={() => setSelectedTask(null)}
                 className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
               >
                 Đóng
@@ -145,13 +124,7 @@ export default function TaskPage() {
         </div>
       )}
 
-      {/* Modal thêm task */}
-      {isModalOpen && (
-        <AddTaskModal
-          onClose={() => setIsModalOpen(false)}
-          onTaskAdded={handleTaskAdded}
-        />
-      )}
+      {isModalOpen && <AddTaskModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }

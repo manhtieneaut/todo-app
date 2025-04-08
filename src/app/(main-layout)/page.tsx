@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import HomeContent from "./(component)/HomeContent";
 
 export default function HomePage({ children }: { children: React.ReactNode }) {
   
@@ -27,7 +28,7 @@ export default function HomePage({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="container mx-auto p-4">
-       <h1>Trang chủ</h1>
+       <HomeContent />
     </div>
   );
 }

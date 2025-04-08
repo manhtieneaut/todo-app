@@ -1,21 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { addTask } from './api';
+import { useTaskStore } from './store';
 
 interface AddTaskModalProps {
-  onClose: () => void; // Hàm đóng modal
-  onTaskAdded: (task: any) => void; // Hàm callback khi task được thêm
+  onClose: () => void;
 }
 
-export default function AddTaskModal({ onClose, onTaskAdded }: AddTaskModalProps) {
+export default function AddTaskModal({ onClose }: AddTaskModalProps) {
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
     status: 'pending',
     due_date: '',
-  }); // Dữ liệu task mới
+  });
   const [error, setError] = useState<string | null>(null);
+
+  const addTaskToStore = useTaskStore((state) => state.addTask);
 
   const handleAddTask = async () => {
     if (!newTask.title.trim()) {
@@ -24,22 +26,12 @@ export default function AddTaskModal({ onClose, onTaskAdded }: AddTaskModalProps
     }
 
     try {
-      const { data, error } = await supabase
-        .from("tasks")
-        .insert([newTask])
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        onTaskAdded(data[0]); // Gọi callback để cập nhật danh sách task
-        setNewTask({ title: '', description: '', status: 'pending', due_date: '' }); // Reset form
-        onClose(); // Đóng modal
-      }
-    } catch (error: any) {
-      setError(error.message);
+      const task = await addTask(newTask);
+      addTaskToStore(task);
+      setNewTask({ title: '', description: '', status: 'pending', due_date: '' });
+      onClose();
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
