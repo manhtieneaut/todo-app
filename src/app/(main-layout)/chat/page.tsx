@@ -72,20 +72,25 @@ const ChatPage = () => {
   }, [setCurrentUserId, setConversations, setSelectedConversation]);
 
   useEffect(() => {
-    if (!selectedConversation) return;
+    scrollToBottom();
+  }, [messages.length]);
+  
 
+  useEffect(() => {
+    if (!selectedConversation) return;
+  
     const loadMessages = async () => {
       try {
         const msgs = await fetchMessages(selectedConversation.id);
         setMessages(msgs);
-        scrollToBottom();
+        scrollToBottom(); // ✅ Lần đầu tải tin nhắn
       } catch {
         antdMessage.error('Failed to load messages');
       }
     };
-
+  
     loadMessages();
-
+  
     const channel = supabase
       .channel(`messages:conversation_id=eq.${selectedConversation.id}`)
       .on(
@@ -98,14 +103,16 @@ const ChatPage = () => {
         },
         (payload) => {
           addMessage(payload.new as Message);
+          scrollToBottom(); // ✅ Scroll khi có tin nhắn mới real-time
         }
       )
       .subscribe();
-
+  
     return () => {
       channel.unsubscribe();
     };
   }, [selectedConversation, setMessages, addMessage]);
+  
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile) || !selectedConversation || !currentUserId) return;
@@ -222,20 +229,11 @@ const ChatPage = () => {
                       maxWidth: '60%',
                       padding: '8px 16px',
                       borderRadius: '8px',
-                      background:
-                        msg.message
-                          ? msg.sender_id === currentUserId
-                            ? '#1890ff'
-                            : '#f0f0f0'
-                          : '#ffffff',
-                      color:
-                        msg.message
-                          ? msg.sender_id === currentUserId
-                            ? '#fff'
-                            : '#000'
-                          : '#1890ff',
+                      background: msg.message ? '#1890ff' : '#ffffff',
+                      color: msg.message ? '#fff' : '#1890ff',
                       border: !msg.message ? '1px solid #1890ff' : undefined,
                     }}
+                    
                   >
 
                     {msg.message && <p>{msg.message}</p>}

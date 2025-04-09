@@ -1,0 +1,65 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { message } from 'antd';
+import { jwtDecode } from 'jwt-decode';
+import { useAuthStore } from '@/store/auth';
+import { useProfileStore } from '@/store/profile';
+import { getUserInfo } from '@/api/profileApi';
+
+interface CustomJwtPayload {
+  user_role: string;
+}
+
+export default function AuthCallbackPage() {
+  const router = useRouter();
+  const setCurrentUser = useAuthStore((state) => state.setCurrentUser);
+  const setUserInfo = useProfileStore((state) => state.setUserInfo);
+  const setLoading = useProfileStore((state) => state.setLoading);
+
+  useEffect(() => {
+    const handleMagicLink = async () => {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error || !data.session) {
+        message.error('Đăng nhập thất bại!');
+        return;
+      }
+
+      const { session } = data;
+      const user = session.user;
+
+      try {
+        // Lưu JWT
+        const jwtToken = session.access_token;
+        localStorage.setItem('jwt_token', jwtToken);
+
+        // Giải mã để lấy role
+        const decodedToken = jwtDecode<CustomJwtPayload>(jwtToken);
+        const userRole = decodedToken.user_role;
+        localStorage.setItem('user_role', userRole);
+
+        // Lưu user vào store
+        setCurrentUser({ id: user.id, email: user.email! });
+
+        // Lấy profile
+        setLoading(true);
+        const profile = await getUserInfo();
+        setUserInfo(profile);
+
+        message.success('Đăng nhập thành công!');
+        router.push('/');
+      } catch (e) {
+        message.error('Lỗi xử lý thông tin người dùng!');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    handleMagicLink();
+  }, [router]);
+
+  return <p style={{ padding: 24 }}>Đang xử lý đăng nhập...</p>;
+}

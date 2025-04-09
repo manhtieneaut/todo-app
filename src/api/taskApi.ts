@@ -27,3 +27,22 @@ export const deleteTask = async (taskId: string) => {
 
   if (error) throw error;
 };
+
+// taskApi.ts
+export const updateTaskStatus = async (taskId: string, newStatus: string) => {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ status: newStatus })
+    .eq('id', taskId);
+
+  if (error) throw error;
+};
+
+export const shareTaskWithUser = async (taskId: string, userId: string) => {
+  const { error } = await supabase.from('task_shares').insert({
+    task_id: taskId,
+    share_with: userId,
+  });
+
+  return { error };
+};
