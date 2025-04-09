@@ -8,8 +8,8 @@ import { useProfileStore } from '../../store/profile';
 import { getUserInfo } from '../../api/profileApi';
 import { Form, Input, Button, Typography, message, Card } from 'antd';
 import { jwtDecode } from 'jwt-decode';
+import { useUserRole } from '@/hooks/useUserRole';
 
-// Định nghĩa kiểu dữ liệu cho JWT với user_role
 interface CustomJwtPayload {
   user_role: string;
 }
@@ -23,10 +23,12 @@ export default function AuthPage() {
   const setUserInfo = useProfileStore((state) => state.setUserInfo);
   const setLoading = useProfileStore((state) => state.setLoading);
 
+  // Dùng hook lấy user role nếu cần ở component
+  useUserRole();
+
   const handleAuth = async (values: { email: string; password: string }) => {
     const { email, password } = values;
 
-    // Đăng nhập hoặc đăng ký
     const response = isSignUp
       ? await supabase.auth.signUp({ email, password })
       : await supabase.auth.signInWithPassword({ email, password });
@@ -41,22 +43,19 @@ export default function AuthPage() {
     if (user && session) {
       setCurrentUser({ id: user.id, email: user.email! });
 
-      // Lưu JWT token vào localStorage
+      // Lưu JWT token
       const jwtToken = session.access_token;
       localStorage.setItem('jwt_token', jwtToken);
 
-      // Giải mã JWT để lấy user_role
+      // Decode để lấy user_role
       try {
         const decodedToken = jwtDecode<CustomJwtPayload>(jwtToken);
         const userRole = decodedToken.user_role;
 
-        console.log('User Role:', userRole); // In ra user role từ JWT
+        console.log('User Role:', userRole);
+        localStorage.setItem('user_role', userRole); // Lưu nếu cần
 
-        // Lưu thông tin user role vào state hoặc localStorage nếu cần
-        // (Cập nhật thêm vào state nếu cần sử dụng user_role sau này)
-        localStorage.setItem('user_role', userRole);
-
-        // Lấy thông tin profile của người dùng
+        // Lấy thông tin profile
         setLoading(true);
         const profile = await getUserInfo();
         setUserInfo(profile);
@@ -72,8 +71,18 @@ export default function AuthPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(to right, #9D50BB, #6E48AA)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Card style={{ width: 400, borderRadius: 16, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to right, #9D50BB, #6E48AA)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <Card style={{
+        width: 400,
+        borderRadius: 16,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
+      }}>
         <Title level={2} style={{ textAlign: 'center', marginBottom: 32 }}>
           {isSignUp ? 'Đăng ký' : 'Đăng nhập'}
         </Title>

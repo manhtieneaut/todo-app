@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Layout, Menu, List, Input, Button, Typography, Upload, message as antdMessage, Modal } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabaseClient';
-import { Message, Conversation } from '../../../types/chat';
+import { Message } from '../../../types/chat';
 
 import {
   fetchCurrentUser,
@@ -18,7 +18,6 @@ import {
 } from '../../../api/chatApi';
 
 import { useChatStore } from '../../../store/chat';
-import { useAuthStore } from '@/store/auth';
 import SearchUser from '@/component/SearchUser';
 
 const { Header, Sider, Content } = Layout;
@@ -46,7 +45,6 @@ const ChatPage = () => {
   const [userIdToAdd, setUserIdToAdd] = useState('');
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const currentUser = useAuthStore((state) => state.currentUser);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -224,10 +222,22 @@ const ChatPage = () => {
                       maxWidth: '60%',
                       padding: '8px 16px',
                       borderRadius: '8px',
-                      background: msg.sender_id === currentUserId ? '#1890ff' : '#f0f0f0',
-                      color: msg.sender_id === currentUserId ? '#fff' : '#000',
+                      background:
+                        msg.message
+                          ? msg.sender_id === currentUserId
+                            ? '#1890ff'
+                            : '#f0f0f0'
+                          : '#ffffff',
+                      color:
+                        msg.message
+                          ? msg.sender_id === currentUserId
+                            ? '#fff'
+                            : '#000'
+                          : '#1890ff',
+                      border: !msg.message ? '1px solid #1890ff' : undefined,
                     }}
                   >
+
                     {msg.message && <p>{msg.message}</p>}
                     {msg.file_url && (
                       <a

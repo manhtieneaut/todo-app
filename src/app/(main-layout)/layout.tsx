@@ -72,12 +72,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" / ");
 
-  const menu = [
-    { label: "Home", icon: <Home size={18} />, href: "/" },
-    { label: "Profile", icon: <User size={18} />, href: "/profile" },
-    { label: "Chats", icon: <MessageSquare size={18} />, href: "/chat" },
-    { label: "Tasks", icon: <ClipboardList size={18} />, href: "/task" },
-  ];
+    const userRole = typeof window !== "undefined" ? localStorage.getItem("user_role") : null;
+
+    const menu = [
+      { label: "Home", icon: <Home size={18} />, href: "/" },
+      { label: "Profile", icon: <User size={18} />, href: "/profile" },
+      { label: "Chats", icon: <MessageSquare size={18} />, href: "/chat" },
+      { label: "Tasks", icon: <ClipboardList size={18} />, href: "/task" },
+      ...(userRole === "admin"
+        ? [{ label: "Admin", icon: <ClipboardList size={18} />, href: "/admin" }]
+        : []),
+    ];
+    
 
   return (
     <AuthGuard>
