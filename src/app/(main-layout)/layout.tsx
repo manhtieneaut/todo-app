@@ -14,7 +14,6 @@ import {
   User,
   MessageSquare,
   ClipboardList,
-  LogOut,
 } from "lucide-react";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -72,7 +71,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" / ");
 
-    const userRole = typeof window !== "undefined" ? localStorage.getItem("user_role") : null;
+    const [userRole, setUserRole] = useState<string | null>(null);
+
+    useEffect(() => {
+      const storedRole = localStorage.getItem('user_role');
+      setUserRole(storedRole);
+    }, []);
 
     const menu = [
       { label: "Home", icon: <Home size={18} />, href: "/" },
