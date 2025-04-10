@@ -42,3 +42,8 @@ a:hover {
   color: var(--link-color);
   text-decoration: underline;
 }
+
+/* globals.css */
+.ant-message {
+  z-index: 9999 !important;
+}

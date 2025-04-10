@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -14,6 +13,7 @@ import {
   User,
   MessageSquare,
   ClipboardList,
+  Shield
 } from "lucide-react";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -78,13 +78,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       setUserRole(storedRole);
     }, []);
 
+
     const menu = [
       { label: "Home", icon: <Home size={18} />, href: "/" },
       { label: "Profile", icon: <User size={18} />, href: "/profile" },
       { label: "Chats", icon: <MessageSquare size={18} />, href: "/chat" },
       { label: "Tasks", icon: <ClipboardList size={18} />, href: "/task" },
       ...(userRole === "admin"
-        ? [{ label: "Admin", icon: <ClipboardList size={18} />, href: "/admin" }]
+        ? [{ label: "Admin", icon: <Shield size={18} />, href: "/admin" }]
+        : []),
+      ...(userRole === "moderator"
+        ? [{ label: "Moderator", icon: <Shield size={18} />, href: "/moderator" }]
         : []),
     ];
     

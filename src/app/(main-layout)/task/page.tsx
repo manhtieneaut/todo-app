@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchTasks, deleteTask, updateTaskStatus, shareTaskWithUser } from '@/api/taskApi';
+import { fetchTasks, deleteTask, updateTaskStatus } from '@/api/taskApi';
 import { useTaskStore } from '../../../store/task';
 import AddTaskModal from './AddTaskModal';
+import ShareTaskModal from './ShareTaskModal';
 import { Task } from '../../../store/task';
+import { Table, Button, Modal, Select, message } from 'antd';
+import { DeleteOutlined, ShareAltOutlined } from '@ant-design/icons';
 
 export default function TaskPage() {
   const tasks = useTaskStore((state) => state.tasks);
@@ -16,10 +19,8 @@ export default function TaskPage() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-
+  const [shareTaskId, setShareTaskId] = useState<string | null>(null);
 
   const STATUS_OPTIONS = ['chưa làm', 'đang làm', 'hoàn thành'];
 
@@ -45,23 +46,30 @@ export default function TaskPage() {
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
     } catch (error: any) {
-      alert(`Lỗi khi cập nhật trạng thái: ${error.message}`);
+      message.error(`Lỗi khi cập nhật trạng thái: ${error.message}`);
     }
   };
 
-
-
   const handleDeleteTask = async (taskId: string) => {
-    const confirmDelete = confirm("Bạn có chắc chắn muốn xóa công việc này?");
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa công việc này?");
     if (!confirmDelete) return;
 
     try {
       await deleteTask(taskId);
       removeTask(taskId);
       setSelectedTask(null);
+      message.success('Đã xóa công việc');
     } catch (error: any) {
-      alert(`Lỗi khi xóa công việc: ${error.message}`);
+      message.error(`Lỗi khi xóa công việc: ${error.message}`);
     }
+  };
+
+  const handleOpenModal = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTask(null);
   };
 
   const formatDate = (dateString?: string) => {
@@ -70,17 +78,66 @@ export default function TaskPage() {
     return new Intl.DateTimeFormat('vi-VN').format(date);
   };
 
-  const renderStatusBadge = (status: string) => {
-    const base = 'inline-block px-2 py-1 text-xs font-semibold rounded-full';
-    switch (status) {
-      case 'hoàn thành':
-        return <span className={`${base} bg-green-100 text-green-700`}>{status}</span>;
-      case 'đang làm':
-        return <span className={`${base} bg-yellow-100 text-yellow-700`}>{status}</span>;
-      default:
-        return <span className={`${base} bg-gray-100 text-gray-700`}>{status}</span>;
-    }
-  };
+  const columns = [
+    {
+      title: 'Tiêu đề',
+      dataIndex: 'title',
+      render: (text: string, record: Task) => (
+        <a onClick={() => handleOpenModal(record)}>{text}</a>
+      ),
+    },
+    {
+      title: 'Mô tả',
+      dataIndex: 'description',
+      render: (text: string) => text || "Không có mô tả",
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      render: (status: string, record: Task) => (
+        <Select
+          value={status}
+          onChange={(value) => handleChangeStatus(record.id, value)}
+          style={{ width: 120 }}
+        >
+          {STATUS_OPTIONS.map((status) => (
+            <Select.Option key={status} value={status}>
+              {status}
+            </Select.Option>
+          ))}
+        </Select>
+      ),
+    },
+    {
+      title: 'Thời hạn',
+      dataIndex: 'due_date',
+      render: (date: string) => formatDate(date),
+    },
+    {
+      title: 'Hành động',
+      render: (text: string, record: Task) => (
+        <div className="flex gap-2">
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteTask(record.id)}
+          >
+            Xóa
+          </Button>
+          <Button
+            type="primary"
+            icon={<ShareAltOutlined />}
+            onClick={() => {
+              setShareTaskId(record.id);
+              setIsShareModalOpen(true);
+            }}
+          >
+            Chia sẻ
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Đang tải công việc...</div>;
@@ -95,98 +152,48 @@ export default function TaskPage() {
       <h1 className="text-3xl font-bold text-center mb-8">Danh sách công việc</h1>
 
       <div className="flex justify-end mb-4">
-        <button
+        <Button
+          type="primary"
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
         >
           + Thêm Task
-        </button>
+        </Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tiêu đề</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mô tả</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Trạng thái</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Thời hạn</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Hành động</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {tasks.map((task) => (
-              <tr key={task.id} className="hover:bg-gray-50 transition">
-                <td
-                  className="px-6 py-4 text-sm font-medium text-blue-600 cursor-pointer"
-
-                >
-                  {task.title}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{task.description || "Không có mô tả"}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={task.status}
-                      onChange={(e) => handleChangeStatus(task.id, e.target.value)}
-                      className="text-sm rounded-md border border-gray-300 px-3 py-1 bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    >
-                      {STATUS_OPTIONS.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">{formatDate(task.due_date)}</td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => handleDeleteTask(task.id)}
-                    className="inline-flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition"
-                  >
-                    🗑 Xóa
-                  </button>
-
-                  <button
-                    onClick={() => setIsShareModalOpen(true)}  // Pass the task id and selected userId
-                    className="inline-flex items-center gap-2 bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-600 transition"
-                  >
-                    Chia sẻ
-                  </button>
-
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table
+        columns={columns}
+        dataSource={tasks}
+        rowKey="id"
+        loading={loading}
+        pagination={false}
+      />
 
       {/* Modal chi tiết công việc */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-            <h2 className="text-2xl font-bold mb-4">{selectedTask.title}</h2>
-            <p className="mb-4"><strong>Mô tả:</strong> {selectedTask.description || "Không có mô tả"}</p>
-            <p className="mb-4"><strong>Trạng thái:</strong> {renderStatusBadge(selectedTask.status)}</p>
-            <p className="mb-4"><strong>Thời hạn:</strong> {formatDate(selectedTask.due_date)}</p>
-
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setSelectedTask(null)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal
+          title={selectedTask.title}
+          open={!!selectedTask}
+          onCancel={handleCloseModal}
+          footer={null}
+        >
+          <p><strong>Mô tả:</strong> {selectedTask.description || "Không có mô tả"}</p>
+          <p><strong>Trạng thái:</strong> {selectedTask.status}</p>
+          <p><strong>Thời hạn:</strong> {formatDate(selectedTask.due_date)}</p>
+        </Modal>
       )}
 
-      
-      {isModalOpen && <AddTaskModal onClose={() => setIsModalOpen(false)} />}
+      {/* Modal chia sẻ công việc */}
+      <ShareTaskModal
+        taskId={shareTaskId}
+        visible={isShareModalOpen}
+        onClose={() => {
+          setIsShareModalOpen(false);
+          setShareTaskId(null);
+        }}
+      />
 
-        
+      {/* Modal thêm công việc */}
+      {isModalOpen && <AddTaskModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );
 }

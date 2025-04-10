@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import HomeContent from "../../component/HomeContent";
+import { ConfigProvider } from 'antd';
 
 export default function HomePage({ children }: { children: React.ReactNode }) {
   

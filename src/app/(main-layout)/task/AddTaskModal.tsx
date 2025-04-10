@@ -1,8 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { Modal, Input, Select, DatePicker, Button, message } from 'antd';
 import { addTask } from '../../../api/taskApi';
 import { useTaskStore } from '../../../store/task';
+import dayjs from 'dayjs';
+
+const { TextArea } = Input;
+const { Option } = Select;
 
 interface AddTaskModalProps {
   onClose: () => void;
@@ -15,74 +20,69 @@ export default function AddTaskModal({ onClose }: AddTaskModalProps) {
     status: 'pending',
     due_date: '',
   });
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const addTaskToStore = useTaskStore((state) => state.addTask);
 
   const handleAddTask = async () => {
     if (!newTask.title.trim()) {
-      alert('Tiêu đề không được để trống!');
+      message.warning('Tiêu đề không được để trống!');
       return;
     }
 
     try {
+      setLoading(true);
       const task = await addTask(newTask);
       addTaskToStore(task);
+      message.success('Thêm công việc thành công!');
       setNewTask({ title: '', description: '', status: 'pending', due_date: '' });
       onClose();
     } catch (err: any) {
-      setError(err.message);
+      message.error('Lỗi: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Thêm công việc mới</h2>
-        <input
-          type="text"
-          placeholder="Tiêu đề"
-          value={newTask.title}
-          onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-        />
-        <textarea
-          placeholder="Mô tả"
-          value={newTask.description}
-          onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-        />
-        <select
-          value={newTask.status}
-          onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-        >
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
-        <input
-          type="date"
-          value={newTask.due_date}
-          onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4"
-        />
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <div className="flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={handleAddTask}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-          >
-            Thêm
-          </button>
-        </div>
-      </div>
-    </div>
+    <Modal
+      title="Thêm công việc mới"
+      open={true}
+      onCancel={onClose}
+      onOk={handleAddTask}
+      okText="Thêm"
+      cancelText="Hủy"
+      confirmLoading={loading}
+    >
+      <Input
+        placeholder="Tiêu đề"
+        value={newTask.title}
+        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+        className="mb-4"
+      />
+      <TextArea
+        placeholder="Mô tả"
+        value={newTask.description}
+        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+        className="mb-4"
+        autoSize
+      />
+      <Select
+        value={newTask.status}
+        onChange={(value) => setNewTask({ ...newTask, status: value })}
+        className="w-full mb-4"
+      >
+        <Option value="pending">Pending</Option>
+        <Option value="in_progress">In Progress</Option>
+        <Option value="completed">Completed</Option>
+      </Select>
+      <DatePicker
+        value={newTask.due_date ? dayjs(newTask.due_date) : null}
+        onChange={(date) =>
+          setNewTask({ ...newTask, due_date: date ? date.format('YYYY-MM-DD') : '' })
+        }
+        className="w-full"
+      />
+    </Modal>
   );
 }

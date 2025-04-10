@@ -28,42 +28,56 @@ export default function AuthPage() {
 
   const handleAuth = async (values: { email: string; password?: string }) => {
     const { email, password } = values;
-
+  
     if (authMethod === 'magic') {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/login/callback`, // URL callback sau khi người dùng nhấn vào magic link
+          emailRedirectTo: `${window.location.origin}/login/callback`,
         },
       });
-
+  
       if (error) {
         message.error('Lỗi gửi magic link: ' + error.message);
-        return;
+      } else {
+        message.success('Đã gửi magic link đến email của bạn!');
       }
-
-      message.success('Đã gửi magic link đến email của bạn!');
       return;
     }
-
-    // Đăng nhập / đăng ký bằng email + password
+  
+    if (!email || !password) {
+      message.error('Vui lòng nhập đầy đủ email và mật khẩu!');
+      return;
+    }
+  
+    if (password.length < 6) {
+      message.error('Mật khẩu phải có ít nhất 6 ký tự!');
+      return;
+    }
+  
     const response = isSignUp
-      ? await supabase.auth.signUp({ email, password: password! })
-      : await supabase.auth.signInWithPassword({ email, password: password! });
-
+      ? await supabase.auth.signUp({ email, password })
+      : await supabase.auth.signInWithPassword({ email, password });
+  
     if (response.error) {
       message.error('Lỗi: ' + response.error.message);
       return;
     }
-
+  
     const { user, session } = response.data;
-
+  
+    if (isSignUp) {
+      message.success(`🎉 Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.`);
+      setIsSignUp(false); // 👈 Quay lại giao diện đăng nhập
+      return;
+    }
+  
     if (user && session) {
       setCurrentUser({ id: user.id, email: user.email! });
-
+  
       const jwtToken = session.access_token;
       localStorage.setItem('jwt_token', jwtToken);
-
+  
       try {
         const decodedToken = jwtDecode<CustomJwtPayload>(jwtToken);
         const userRole = decodedToken.user_role;
@@ -77,11 +91,15 @@ export default function AuthPage() {
       } finally {
         setLoading(false);
       }
-
-      message.success(isSignUp ? 'Đăng ký thành công!' : 'Đăng nhập thành công!');
-      router.push('/');
+  
+      message.success('Đăng nhập thành công!');
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     }
   };
+  
+  
 
   return (
     <div style={{
