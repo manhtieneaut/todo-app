@@ -6,8 +6,9 @@ import { useTaskStore } from '../../../store/task';
 import AddTaskModal from './AddTaskModal';
 import ShareTaskModal from './ShareTaskModal';
 import { Task } from '../../../store/task';
-import { Table, Button, Modal, Select, message } from 'antd';
+import { Table, Button, Modal, Select} from 'antd';
 import { DeleteOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { toast } from 'sonner';
 
 export default function TaskPage() {
   const tasks = useTaskStore((state) => state.tasks);
@@ -46,7 +47,7 @@ export default function TaskPage() {
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
     } catch (error: any) {
-      message.error(`Lỗi khi cập nhật trạng thái: ${error.message}`);
+      toast.error(`Lỗi khi cập nhật trạng thái: ${error.message}`);
     }
   };
 
@@ -58,9 +59,9 @@ export default function TaskPage() {
       await deleteTask(taskId);
       removeTask(taskId);
       setSelectedTask(null);
-      message.success('Đã xóa công việc');
+      toast.success('Đã xóa công việc');
     } catch (error: any) {
-      message.error(`Lỗi khi xóa công việc: ${error.message}`);
+      toast.error(`Lỗi khi xóa công việc: ${error.message}`);
     }
   };
 

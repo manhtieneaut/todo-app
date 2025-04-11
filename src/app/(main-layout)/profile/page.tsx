@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Avatar, Button, Card, Form, Input, message, Spin, Upload } from 'antd';
+import { Avatar, Button, Card, Form, Input, Spin, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { updateUserInfo, uploadAvatar } from '../../../api/profileApi';
 import { useProfileStore } from '../../../store/profile';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const {
@@ -48,9 +49,9 @@ export default function ProfilePage() {
       setUserInfo({ ...userInfo, ...values, avatar_url: avatarUrl });
       setAvatarFile(null);
       toggleEditMode();
-      message.success("Cập nhật thông tin thành công!");
+      toast.success("Cập nhật thông tin thành công!");
     } catch (err: any) {
-      message.error(err.message || "Lỗi khi cập nhật thông tin.");
+      toast.error(err.message || "Lỗi khi cập nhật thông tin.");
     }
   };
 

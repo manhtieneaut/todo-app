@@ -3,11 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import { message } from 'antd';
 import { jwtDecode } from 'jwt-decode';
 import { useAuthStore } from '@/store/auth';
 import { useProfileStore } from '@/store/profile';
 import { getUserInfo } from '@/api/profileApi';
+import { toast } from 'sonner';
 
 interface CustomJwtPayload {
   user_role: string;
@@ -24,7 +24,7 @@ export default function AuthCallbackPage() {
       const { data, error } = await supabase.auth.getSession();
 
       if (error || !data.session) {
-        message.error('Đăng nhập thất bại!');
+        toast.error('Đăng nhập thất bại!');
         return;
       }
 
@@ -49,10 +49,10 @@ export default function AuthCallbackPage() {
         const profile = await getUserInfo();
         setUserInfo(profile);
 
-        message.success('Đăng nhập thành công!');
+        toast.success('Đăng nhập thành công!');
         router.push('/');
       } catch (e) {
-        message.error('Lỗi xử lý thông tin người dùng!');
+        toast.error('Lỗi xử lý thông tin người dùng!');
       } finally {
         setLoading(false);
       }

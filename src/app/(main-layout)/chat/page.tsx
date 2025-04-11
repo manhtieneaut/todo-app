@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Layout, Menu, List, Input, Button, Typography, Upload, message as antdMessage, Modal } from 'antd';
+import { Layout, Menu, List, Input, Button, Typography, Upload, Modal } from 'antd';
 import { UploadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabaseClient';
 import { Message } from '../../../types/chat';
+import { toast } from 'sonner';
 
 import {
   fetchCurrentUser,
@@ -65,7 +66,7 @@ const ChatPage = () => {
           setSelectedConversation(convs[0]);
         }
       } catch (err) {
-        antdMessage.error('Failed to load initial data');
+        toast.error('Failed to load initial data');
       }
     };
     init();
@@ -85,7 +86,7 @@ const ChatPage = () => {
         setMessages(msgs);
         scrollToBottom(); // ✅ Lần đầu tải tin nhắn
       } catch {
-        antdMessage.error('Failed to load messages');
+        toast.error('Failed to load messages');
       }
     };
   
@@ -127,13 +128,13 @@ const ChatPage = () => {
       setNewMessage('');
       setSelectedFile(null);
     } catch {
-      antdMessage.error('Failed to send message');
+      toast.error('Failed to send message');
     }
   };
 
   const handleCreateConversation = async () => {
     if (!newConversationName.trim()) {
-      antdMessage.error('Conversation name cannot be empty');
+      toast.error('Conversation name cannot be empty');
       return;
     }
 
@@ -142,9 +143,9 @@ const ChatPage = () => {
       setConversations([...conversations, ...data]);
       setNewConversationName('');
       setShowCreateModal(false);
-      antdMessage.success('Conversation created and you were added as a member');
+      toast.success('Conversation created and you were added as a member');
     } catch {
-      antdMessage.error('Failed to create conversation');
+      toast.error('Failed to create conversation');
     }
   };
 
@@ -156,9 +157,9 @@ const ChatPage = () => {
       await deleteConversation(selectedConversation.id);
       setConversations(conversations.filter((conv) => conv.id !== selectedConversation.id));
       setSelectedConversation(null);
-      antdMessage.success('Conversation deleted');
+      toast.success('Conversation deleted');
     } catch {
-      antdMessage.error('Failed to delete conversation');
+      toast.error('Failed to delete conversation');
     }
   };
 
@@ -167,12 +168,12 @@ const ChatPage = () => {
 
     try {
       await addUserToConversation(selectedConversation.id, userIdToAdd);
-      antdMessage.success('User added');
+      toast.success('User added');
       setShowAddUserModal(false);
       setUserIdToAdd('');
       setSelectedUser(null);
     } catch {
-      antdMessage.error('Failed to add user');
+      toast.error('Failed to add user');
     }
   };
 

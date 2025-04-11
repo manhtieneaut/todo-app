@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Input, Select, DatePicker, Button, message } from 'antd';
+import { Modal, Input, Select, DatePicker, Button } from 'antd';
 import { addTask } from '../../../api/taskApi';
 import { useTaskStore } from '../../../store/task';
 import dayjs from 'dayjs';
+import { toast } from 'sonner';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -26,7 +27,7 @@ export default function AddTaskModal({ onClose }: AddTaskModalProps) {
 
   const handleAddTask = async () => {
     if (!newTask.title.trim()) {
-      message.warning('Tiêu đề không được để trống!');
+      toast.warning('Tiêu đề không được để trống!');
       return;
     }
 
@@ -34,11 +35,11 @@ export default function AddTaskModal({ onClose }: AddTaskModalProps) {
       setLoading(true);
       const task = await addTask(newTask);
       addTaskToStore(task);
-      message.success('Thêm công việc thành công!');
+      toast.success('Thêm công việc thành công!');
       setNewTask({ title: '', description: '', status: 'pending', due_date: '' });
       onClose();
     } catch (err: any) {
-      message.error('Lỗi: ' + err.message);
+      toast.error('Lỗi: ' + err.message);
     } finally {
       setLoading(false);
     }

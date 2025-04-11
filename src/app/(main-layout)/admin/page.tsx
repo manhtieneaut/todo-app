@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Card, Spin, Result } from 'antd';
-import { useUserRole } from '@/hooks/useUserRole'; // hook đã tạo trước đó
+import { Typography, Card, Spin, Button } from 'antd';
+import { toast } from 'sonner';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const { Title } = Typography;
 
@@ -15,9 +16,10 @@ export default function AdminPage() {
   useEffect(() => {
     if (userRole !== null) {
       if (userRole !== 'admin') {
-        router.push('/'); // không phải admin thì redirect về trang chủ
+        router.push('/');
       } else {
-        setLoading(false); // đúng admin thì load nội dung
+        setLoading(false);
+        toast.success('Chào mừng admin trở lại 👋');
       }
     }
   }, [userRole, router]);
@@ -41,7 +43,13 @@ export default function AdminPage() {
       <Card style={{ width: 600, borderRadius: 12 }}>
         <Title level={2}>🎩 Trang quản trị</Title>
         <p>Chào mừng admin! Bạn có thể quản lý dữ liệu tại đây.</p>
-        {/* Thêm nội dung admin ở đây, ví dụ: quản lý người dùng, nhóm chat, tin nhắn, v.v. */}
+
+        <Button
+          type="primary"
+          onClick={() => toast.success('Đã gửi thông báo test ✅')}
+        >
+          Gửi thông báo
+        </Button>
       </Card>
     </div>
   );

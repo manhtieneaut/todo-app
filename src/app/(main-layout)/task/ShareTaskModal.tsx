@@ -1,9 +1,10 @@
 'use client';
 
-import { Modal, message } from 'antd';
+import { Modal} from 'antd';
 import { shareTaskWithUser } from '@/api/taskApi';
 import { useState } from 'react';
 import SearchUser from '@/component/SearchUser'; // Cập nhật đường dẫn nếu cần
+import { toast } from 'sonner';
 
 type ShareTaskModalProps = {
   taskId: string | null;
@@ -20,10 +21,10 @@ export default function ShareTaskModal({ taskId, visible, onClose }: ShareTaskMo
     setLoading(true);
     try {
       await shareTaskWithUser(taskId, user.id);
-      message.success(`Đã chia sẻ công việc với ${user.email}`);
+      toast.success(`Đã chia sẻ công việc với ${user.email}`);
       onClose();
     } catch (error: any) {
-      message.error(`Chia sẻ thất bại: ${error.message}`);
+      toast.error(`Chia sẻ thất bại: ${error.message}`);
     } finally {
       setLoading(false);
     }

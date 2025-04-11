@@ -6,9 +6,10 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuthStore } from '../../store/auth';
 import { useProfileStore } from '../../store/profile';
 import { getUserInfo } from '../../api/profileApi';
-import { Form, Input, Button, Typography, message, Card, Segmented } from 'antd';
+import { Form, Input, Button, Typography, Card, Segmented } from 'antd';
 import { jwtDecode } from 'jwt-decode';
 import { useUserRole } from '@/hooks/useUserRole';
+import { toast } from 'sonner';
 
 interface CustomJwtPayload {
   user_role: string;
@@ -38,20 +39,20 @@ export default function AuthPage() {
       });
   
       if (error) {
-        message.error('Lỗi gửi magic link: ' + error.message);
+        toast.error('Lỗi gửi magic link: ' + error.message);
       } else {
-        message.success('Đã gửi magic link đến email của bạn!');
+        toast.success('Đã gửi magic link đến email của bạn!');
       }
       return;
     }
   
     if (!email || !password) {
-      message.error('Vui lòng nhập đầy đủ email và mật khẩu!');
+      toast.error('Vui lòng nhập đầy đủ email và mật khẩu!');
       return;
     }
   
     if (password.length < 6) {
-      message.error('Mật khẩu phải có ít nhất 6 ký tự!');
+      toast.error('Mật khẩu phải có ít nhất 6 ký tự!');
       return;
     }
   
@@ -60,14 +61,14 @@ export default function AuthPage() {
       : await supabase.auth.signInWithPassword({ email, password });
   
     if (response.error) {
-      message.error('Lỗi: ' + response.error.message);
+      toast.error('Lỗi: ' + response.error.message);
       return;
     }
   
     const { user, session } = response.data;
   
     if (isSignUp) {
-      message.success(`🎉 Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.`);
+      toast.success(`🎉 Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.`);
       setIsSignUp(false); // 👈 Quay lại giao diện đăng nhập
       return;
     }
@@ -87,12 +88,12 @@ export default function AuthPage() {
         const profile = await getUserInfo();
         setUserInfo(profile);
       } catch (err) {
-        message.error('Lỗi giải mã token hoặc lấy thông tin người dùng');
+        toast.error('Lỗi giải mã token hoặc lấy thông tin người dùng');
       } finally {
         setLoading(false);
       }
   
-      message.success('Đăng nhập thành công!');
+      toast.success('Đăng nhập thành công!');
       setTimeout(() => {
         router.push("/");
       }, 1500);
