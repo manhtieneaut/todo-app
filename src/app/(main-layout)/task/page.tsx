@@ -1,19 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  Table,
+  Button,
+  Modal,
+  Select,
+  Typography,
+  Space,
+  Tag,
+  message,
+  Empty,
+} from 'antd';
+import { DeleteOutlined, ShareAltOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTaskPage } from '@/hooks/useTaskPage';
 import { useTaskStore } from '@/store/task';
-import { Table, Button, Modal, Select } from 'antd';
-import { DeleteOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { Task } from '@/store/task';
 import AddTaskModal from './AddTaskModal';
 import ShareTaskModal from './ShareTaskModal';
-import { Task } from '@/store/task';
+
+const { Title } = Typography;
 
 export default function TaskPage() {
   const tasks = useTaskStore((state) => state.tasks);
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatusInStore);
   const deleteTask = useTaskStore((state) => state.removeTaskFromServer);
-
   const { loading, error } = useTaskPage();
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -23,18 +34,24 @@ export default function TaskPage() {
 
   const STATUS_OPTIONS = ['chưa làm', 'đang làm', 'hoàn thành'];
 
+  const statusColor: { [key: string]: string } = {
+    'chưa làm': 'default',
+    'đang làm': 'processing',
+    'hoàn thành': 'success',
+  };
+  
   const columns = [
     {
       title: 'Tiêu đề',
       dataIndex: 'title',
-      render: (text: string, record: Task) => (
-        <a onClick={() => setSelectedTask(record)}>{text}</a>
+      render: (_: string, record: Task) => (
+        <a onClick={() => setSelectedTask(record)}>{record.title}</a>
       ),
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
-      render: (text: string) => text || 'Không có mô tả',
+      render: (text: string) => text || <i style={{ color: '#888' }}>Không có mô tả</i>,
     },
     {
       title: 'Trạng thái',
@@ -43,11 +60,11 @@ export default function TaskPage() {
         <Select
           value={status}
           onChange={(value) => updateTaskStatus(record.id, value)}
-          style={{ width: 120 }}
+          style={{ width: 140 }}
         >
-          {STATUS_OPTIONS.map((status) => (
-            <Select.Option key={status} value={status}>
-              {status}
+          {STATUS_OPTIONS.map((statusOption) => (
+            <Select.Option key={statusOption} value={statusOption}>
+              {statusOption}
             </Select.Option>
           ))}
         </Select>
@@ -57,13 +74,20 @@ export default function TaskPage() {
       title: 'Thời hạn',
       dataIndex: 'due_date',
       render: (date: string) =>
-        date ? new Intl.DateTimeFormat('vi-VN').format(new Date(date)) : 'Không có',
+        date ? new Intl.DateTimeFormat('vi-VN').format(new Date(date)) : <i>Không có</i>,
     },
     {
       title: 'Hành động',
       render: (_: any, record: Task) => (
-        <div className="flex gap-2">
-          <Button danger icon={<DeleteOutlined />} onClick={() => deleteTask(record.id)}>
+        <Space>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              deleteTask(record.id);
+              message.success('Đã xóa công việc');
+            }}
+          >
             Xóa
           </Button>
           <Button
@@ -76,7 +100,7 @@ export default function TaskPage() {
           >
             Chia sẻ
           </Button>
-        </div>
+        </Space>
       ),
     },
   ];
@@ -86,26 +110,69 @@ export default function TaskPage() {
   }
 
   if (error) {
-    return <div className="flex justify-center items-center h-screen text-red-500">Lỗi: {error}</div>;
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500">
+        Lỗi: {error}
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold text-center mb-8">Danh sách công việc</h1>
-
-      <div className="flex justify-end mb-4">
-        <Button type="primary" onClick={() => setIsModalOpen(true)}>
-          + Thêm Task
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <Title level={3} className="!mb-0">
+          Danh sách công việc
+        </Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setIsModalOpen(true)}
+        >
+          Thêm công việc
         </Button>
       </div>
 
-      <Table columns={columns} dataSource={tasks} rowKey="id" pagination={false} />
+      {tasks.length > 0 ? (
+        <Table
+          columns={columns}
+          dataSource={tasks}
+          rowKey="id"
+          pagination={{ pageSize: 6 }}
+          onRow={(record) => ({
+            onClick: () => setSelectedTask(record),
+            style: { cursor: 'pointer' },
+          })}
+          rowClassName="hover:bg-gray-100 transition"
+        />
+      ) : (
+        <Empty description="Chưa có công việc nào." />
+      )}
 
       {selectedTask && (
-        <Modal title={selectedTask.title} open onCancel={() => setSelectedTask(null)} footer={null}>
-          <p><strong>Mô tả:</strong> {selectedTask.description || 'Không có mô tả'}</p>
-          <p><strong>Trạng thái:</strong> {selectedTask.status}</p>
-          <p><strong>Thời hạn:</strong> {selectedTask.due_date}</p>
+        <Modal
+          title={selectedTask.title}
+          open={!!selectedTask}
+          onCancel={() => setSelectedTask(null)}
+          footer={null}
+        >
+          <p>
+            <strong>Mô tả:</strong>{' '}
+            {selectedTask.description || <i>Không có mô tả</i>}
+          </p>
+          <p>
+            <strong>Trạng thái:</strong>{' '}
+            <Tag color={statusColor[selectedTask.status]}>
+              {selectedTask.status}
+            </Tag>
+          </p>
+          <p>
+            <strong>Thời hạn:</strong>{' '}
+            {selectedTask.due_date
+              ? new Intl.DateTimeFormat('vi-VN').format(
+                  new Date(selectedTask.due_date)
+                )
+              : 'Không có'}
+          </p>
         </Modal>
       )}
 

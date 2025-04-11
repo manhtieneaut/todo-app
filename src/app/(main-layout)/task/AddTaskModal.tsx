@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Input, Select, DatePicker, Button } from 'antd';
+import { Modal, Input, Select, DatePicker, Form, Space } from 'antd';
 import { addTask } from '../../../api/taskApi';
 import { useTaskStore } from '../../../store/task';
 import dayjs from 'dayjs';
 import { toast } from 'sonner';
+import { CheckCircleOutlined, ClockCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -47,43 +48,63 @@ export default function AddTaskModal({ onClose }: AddTaskModalProps) {
 
   return (
     <Modal
-      title="Thêm công việc mới"
+      title="📝 Thêm công việc mới"
       open={true}
       onCancel={onClose}
       onOk={handleAddTask}
       okText="Thêm"
       cancelText="Hủy"
       confirmLoading={loading}
+      okButtonProps={{ type: 'primary' }}
     >
-      <Input
-        placeholder="Tiêu đề"
-        value={newTask.title}
-        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-        className="mb-4"
-      />
-      <TextArea
-        placeholder="Mô tả"
-        value={newTask.description}
-        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-        className="mb-4"
-        autoSize
-      />
-      <Select
-        value={newTask.status}
-        onChange={(value) => setNewTask({ ...newTask, status: value })}
-        className="w-full mb-4"
-      >
-        <Option value="pending">Pending</Option>
-        <Option value="in_progress">In Progress</Option>
-        <Option value="completed">Completed</Option>
-      </Select>
-      <DatePicker
-        value={newTask.due_date ? dayjs(newTask.due_date) : null}
-        onChange={(date) =>
-          setNewTask({ ...newTask, due_date: date ? date.format('YYYY-MM-DD') : '' })
-        }
-        className="w-full"
-      />
+      <Form layout="vertical">
+        <Form.Item label="Tiêu đề" required>
+          <Input
+            placeholder="Nhập tiêu đề công việc"
+            value={newTask.title}
+            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+          />
+        </Form.Item>
+
+        <Form.Item label="Mô tả">
+          <TextArea
+            placeholder="Mô tả chi tiết"
+            value={newTask.description}
+            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+            autoSize={{ minRows: 3, maxRows: 6 }}
+          />
+        </Form.Item>
+
+        <Form.Item label="Trạng thái">
+          <Select
+            value={newTask.status}
+            onChange={(value) => setNewTask({ ...newTask, status: value })}
+            className="w-full"
+          >
+            <Option value="pending">
+              <ClockCircleOutlined /> Chờ xử lý
+            </Option>
+            <Option value="in_progress">
+              <LoadingOutlined spin /> Đang thực hiện
+            </Option>
+            <Option value="completed">
+              <CheckCircleOutlined /> Hoàn thành
+            </Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item label="Hạn hoàn thành">
+          <DatePicker
+            value={newTask.due_date ? dayjs(newTask.due_date) : null}
+            onChange={(date) =>
+              setNewTask({ ...newTask, due_date: date ? date.format('YYYY-MM-DD') : '' })
+            }
+            className="w-full"
+            format="DD/MM/YYYY"
+            placeholder="Chọn ngày"
+          />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }

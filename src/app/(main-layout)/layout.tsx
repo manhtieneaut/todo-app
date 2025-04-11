@@ -40,7 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUser({ id: user.id, email: user.email! });
-  
+
         try {
           setLoading(true);
           const profile = await getUserInfo();
@@ -50,10 +50,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         }
       }
     };
-  
+
     if (!currentUser) initUser();
   }, [currentUser, setCurrentUser, setUserInfo, setLoading]); // ✅ đầy đủ dependencies
-  
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -132,8 +132,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              position: "sticky", // 🧷 Dính trên đầu
+              top: 0,
+              zIndex: 100,
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)", // 👌 cho đẹp thêm
             }}
           >
+
             <div>
               <Breadcrumb>
                 {breadcrumb.map((item, index) => (
