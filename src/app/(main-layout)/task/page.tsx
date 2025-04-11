@@ -39,7 +39,7 @@ export default function TaskPage() {
     'đang làm': 'processing',
     'hoàn thành': 'success',
   };
-  
+
   const columns = [
     {
       title: 'Tiêu đề',
@@ -83,7 +83,8 @@ export default function TaskPage() {
           <Button
             danger
             icon={<DeleteOutlined />}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation(); // <-- Ngăn mở modal chi tiết
               deleteTask(record.id);
               message.success('Đã xóa công việc');
             }}
@@ -93,7 +94,8 @@ export default function TaskPage() {
           <Button
             type="primary"
             icon={<ShareAltOutlined />}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation(); // <-- Ngăn mở modal chi tiết
               setShareTaskId(record.id);
               setIsShareModalOpen(true);
             }}
@@ -103,6 +105,7 @@ export default function TaskPage() {
         </Space>
       ),
     },
+
   ];
 
   if (loading) {
@@ -169,8 +172,8 @@ export default function TaskPage() {
             <strong>Thời hạn:</strong>{' '}
             {selectedTask.due_date
               ? new Intl.DateTimeFormat('vi-VN').format(
-                  new Date(selectedTask.due_date)
-                )
+                new Date(selectedTask.due_date)
+              )
               : 'Không có'}
           </p>
         </Modal>
