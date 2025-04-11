@@ -12,7 +12,12 @@ import {
   message,
   Empty,
 } from 'antd';
-import { DeleteOutlined, ShareAltOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  ShareAltOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+
 import { useTaskPage } from '@/hooks/useTaskPage';
 import { useTaskStore } from '@/store/task';
 import { Task } from '@/store/task';
@@ -44,9 +49,7 @@ export default function TaskPage() {
     {
       title: 'Tiêu đề',
       dataIndex: 'title',
-      render: (_: string, record: Task) => (
-        <a onClick={() => setSelectedTask(record)}>{record.title}</a>
-      ),
+      render: (_: string, record: Task) => record.title,
     },
     {
       title: 'Mô tả',
@@ -74,17 +77,24 @@ export default function TaskPage() {
       title: 'Thời hạn',
       dataIndex: 'due_date',
       render: (date: string) =>
-        date ? new Intl.DateTimeFormat('vi-VN').format(new Date(date)) : <i>Không có</i>,
+        date
+          ? new Intl.DateTimeFormat('vi-VN').format(new Date(date))
+          : <i>Không có</i>,
     },
     {
       title: 'Hành động',
       render: (_: any, record: Task) => (
         <Space>
           <Button
+            onClick={() => setSelectedTask(record)}
+          >
+            Chi tiết
+          </Button>
+          <Button
             danger
             icon={<DeleteOutlined />}
             onClick={(e) => {
-              e.stopPropagation(); // <-- Ngăn mở modal chi tiết
+              e.stopPropagation();
               deleteTask(record.id);
               message.success('Đã xóa công việc');
             }}
@@ -95,7 +105,7 @@ export default function TaskPage() {
             type="primary"
             icon={<ShareAltOutlined />}
             onClick={(e) => {
-              e.stopPropagation(); // <-- Ngăn mở modal chi tiết
+              e.stopPropagation();
               setShareTaskId(record.id);
               setIsShareModalOpen(true);
             }}
@@ -105,11 +115,14 @@ export default function TaskPage() {
         </Space>
       ),
     },
-
   ];
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen">Đang tải công việc...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Đang tải công việc...
+      </div>
+    );
   }
 
   if (error) {
@@ -141,10 +154,6 @@ export default function TaskPage() {
           dataSource={tasks}
           rowKey="id"
           pagination={{ pageSize: 6 }}
-          onRow={(record) => ({
-            onClick: () => setSelectedTask(record),
-            style: { cursor: 'pointer' },
-          })}
           rowClassName="hover:bg-gray-100 transition"
         />
       ) : (
@@ -172,8 +181,8 @@ export default function TaskPage() {
             <strong>Thời hạn:</strong>{' '}
             {selectedTask.due_date
               ? new Intl.DateTimeFormat('vi-VN').format(
-                new Date(selectedTask.due_date)
-              )
+                  new Date(selectedTask.due_date)
+                )
               : 'Không có'}
           </p>
         </Modal>
