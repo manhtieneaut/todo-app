@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Layout, Menu, Avatar, Dropdown, Breadcrumb, Typography } from "antd";
 import {
   HomeOutlined,
@@ -24,7 +25,6 @@ const { Text } = Typography;
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { currentUser, setCurrentUser } = useAuthStore();
   const { userInfo, setUserInfo, setLoading } = useProfileStore();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -58,15 +58,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     setCurrentUser(null);
     setUserInfo(null);
     localStorage.removeItem("jwt_token");
-    router.push("/login");
+    location.href = "/login"; // dùng location để tránh flicker trong client
   };
 
   const breadcrumb = pathname === "/"
-    ? ["Home"]
+    ? [{ title: "Home" }]
     : pathname
         .split("/")
         .filter(Boolean)
-        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1));
+        .map((segment) => ({ title: segment.charAt(0).toUpperCase() + segment.slice(1) }));
 
   const menuItems = [
     { label: "Home", icon: <HomeOutlined />, key: "/" },
@@ -81,6 +81,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       : []),
   ];
 
+  const menuWithLink = menuItems.map((item) => ({
+    key: item.key,
+    icon: item.icon,
+    label: <Link href={item.key}>{item.label}</Link>,
+  }));
+
   const dropdownMenu = {
     items: [
       { label: "Profile", key: "profile", icon: <ProfileOutlined /> },
@@ -88,7 +94,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     ],
     onClick: ({ key }: { key: string }) => {
       if (key === "logout") handleLogout();
-      if (key === "profile") router.push("/profile");
+      if (key === "profile") location.href = "/profile";
     },
   };
 
@@ -113,8 +119,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           <Menu
             mode="inline"
             selectedKeys={[pathname]}
-            onClick={({ key }) => router.push(key)}
-            items={menuItems}
+            items={menuWithLink}
           />
         </Sider>
 
@@ -132,11 +137,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
             }}
           >
-            <Breadcrumb
-              items={breadcrumb.map((item) => ({
-                title: item,
-              }))}
-            />
+            <Breadcrumb items={breadcrumb} />
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Text type="secondary" className="hidden sm:block">
                 {currentUser?.email}
