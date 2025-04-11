@@ -108,8 +108,13 @@ export default function HomeContent() {
             <Title level={2} style={{ color: '#1677ff' }}>{section.title}</Title>
             <List
               dataSource={section.content}
-              renderItem={(item) => <List.Item style={{ paddingLeft: 0 }}>{item}</List.Item>}
+              renderItem={(item, index) => (
+                <List.Item key={index} style={{ paddingLeft: 0 }}>
+                  {item}
+                </List.Item>
+              )}
             />
+
             <Divider />
           </div>
         ))}

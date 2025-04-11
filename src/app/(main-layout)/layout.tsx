@@ -40,7 +40,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUser({ id: user.id, email: user.email! });
-
+  
         try {
           setLoading(true);
           const profile = await getUserInfo();
@@ -50,9 +50,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         }
       }
     };
-
+  
     if (!currentUser) initUser();
-  }, [currentUser]);
+  }, [currentUser, setCurrentUser, setUserInfo, setLoading]); // ✅ đầy đủ dependencies
+  
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

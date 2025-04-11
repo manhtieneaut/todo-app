@@ -22,33 +22,29 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleMagicLink = async () => {
       const { data, error } = await supabase.auth.getSession();
-
+  
       if (error || !data.session) {
         toast.error('Đăng nhập thất bại!');
         return;
       }
-
+  
       const { session } = data;
       const user = session.user;
-
+  
       try {
-        // Lưu JWT
         const jwtToken = session.access_token;
         localStorage.setItem('jwt_token', jwtToken);
-
-        // Giải mã để lấy role
+  
         const decodedToken = jwtDecode<CustomJwtPayload>(jwtToken);
         const userRole = decodedToken.user_role;
         localStorage.setItem('user_role', userRole);
-
-        // Lưu user vào store
+  
         setCurrentUser({ id: user.id, email: user.email! });
-
-        // Lấy profile
+  
         setLoading(true);
         const profile = await getUserInfo();
         setUserInfo(profile);
-
+  
         toast.success('Đăng nhập thành công!');
         router.push('/');
       } catch (e) {
@@ -57,9 +53,10 @@ export default function AuthCallbackPage() {
         setLoading(false);
       }
     };
-
+  
     handleMagicLink();
-  }, [router]);
+  }, [router, setCurrentUser, setUserInfo, setLoading]); // ✅ thêm đầy đủ các hàm
+  
 
   return <p style={{ padding: 24 }}>Đang xử lý đăng nhập...</p>;
 }
