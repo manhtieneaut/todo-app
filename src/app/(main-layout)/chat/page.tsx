@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Layout, List } from 'antd';
 import { supabase } from '@/lib/supabaseClient';
 import { useChatStore } from '@/store/chat';
@@ -33,10 +33,10 @@ const ChatPage = () => {
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  }, []);
+  
   useChatInit();
   useMessagesListener(scrollToBottom);
 

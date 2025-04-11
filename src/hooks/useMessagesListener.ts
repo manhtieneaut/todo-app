@@ -53,5 +53,5 @@ export const useMessagesListener = (scrollToBottom: () => void) => {
     return () => {
       channel.unsubscribe();
     };
-  }, [selectedConversation, currentUserId, setMessages, addMessage]);
+  }, [selectedConversation, currentUserId, setMessages, addMessage, scrollToBottom]);
 };
