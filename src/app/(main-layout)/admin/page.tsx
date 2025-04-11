@@ -27,13 +27,13 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div>
-          <Spin tip="Đang kiểm tra quyền truy cập..." />
-        </div>
+          <Spin tip="Đang kiểm tra quyền truy cập...">
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
+          </Spin>
       </div>
     );
   }
-  
+
 
   return (
     <div style={{
