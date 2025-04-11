@@ -1,41 +1,38 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Layout, Menu, Avatar, Dropdown, Breadcrumb, Typography } from "antd";
+import {
+  HomeOutlined,
+  UserOutlined,
+  MessageOutlined,
+  OrderedListOutlined,
+  SafetyOutlined,
+  LogoutOutlined,
+  ProfileOutlined,
+} from "@ant-design/icons";
+
 import { supabase } from "@/lib/supabaseClient";
 import { useAuthStore } from "@/store/auth";
 import { useProfileStore } from "@/store/profile";
 import { getUserInfo } from "@/api/profileApi";
 import AuthGuard from "@/component/AuthGuard";
-import {
-  Home,
-  User,
-  MessageSquare,
-  ClipboardList,
-  Shield
-} from "lucide-react";
+
+const { Header, Sider, Content } = Layout;
+const { Text } = Typography;
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, setCurrentUser } = useAuthStore();
   const { userInfo, setUserInfo, setLoading } = useProfileStore();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(prev => !prev);
-  };
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const storedRole = localStorage.getItem("user_role");
+    setUserRole(storedRole);
   }, []);
 
   useEffect(() => {
@@ -65,112 +62,104 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     router.push("/login");
   };
 
-  const breadcrumb = pathname
-    .split("/")
-    .filter(Boolean)
-    .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" / ");
-
-    const [userRole, setUserRole] = useState<string | null>(null);
-
-    useEffect(() => {
-      const storedRole = localStorage.getItem('user_role');
-      setUserRole(storedRole);
-    }, []);
+  const breadcrumb = pathname === "/"
+    ? ["Home"]
+    : pathname
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1));
 
 
-    const menu = [
-      { label: "Home", icon: <Home size={18} />, href: "/" },
-      { label: "Profile", icon: <User size={18} />, href: "/profile" },
-      { label: "Chats", icon: <MessageSquare size={18} />, href: "/chat" },
-      { label: "Tasks", icon: <ClipboardList size={18} />, href: "/task" },
-      ...(userRole === "admin"
-        ? [{ label: "Admin", icon: <Shield size={18} />, href: "/admin" }]
-        : []),
-      ...(userRole === "moderator"
-        ? [{ label: "Moderator", icon: <Shield size={18} />, href: "/moderator" }]
-        : []),
-    ];
-    
+  const menuItems = [
+    { label: "Home", icon: <HomeOutlined />, key: "/" },
+    { label: "Profile", icon: <UserOutlined />, key: "/profile" },
+    { label: "Chats", icon: <MessageOutlined />, key: "/chat" },
+    { label: "Tasks", icon: <OrderedListOutlined />, key: "/task" },
+    ...(userRole === "admin"
+      ? [{ label: "Admin", icon: <SafetyOutlined />, key: "/admin" }]
+      : []),
+    ...(userRole === "moderator"
+      ? [{ label: "Moderator", icon: <SafetyOutlined />, key: "/moderator" }]
+      : []),
+  ];
+
+  const dropdownMenu = (
+    <Menu
+      onClick={({ key }) => {
+        if (key === "logout") handleLogout();
+        if (key === "profile") router.push("/profile");
+      }}
+      items={[
+        { label: "Profile", key: "profile", icon: <ProfileOutlined /> },
+        { label: "Logout", key: "logout", icon: <LogoutOutlined />, danger: true },
+      ]}
+    />
+  );
 
   return (
     <AuthGuard>
-      <div className="flex h-screen bg-gray-100 text-gray-900">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white border-r shadow-md p-6 flex flex-col justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-purple-600 mb-10 tracking-tight">MyApp</h2>
-            <nav className="flex flex-col gap-3">
-              {menu.map(item => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-100 transition ${pathname === item.href ? "bg-purple-100 text-purple-700" : "text-gray-700"
-                    }`}
-                >
-                  {item.icon}
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </aside>
+      <Layout style={{ minHeight: "100vh" }}>
+        <Sider
+          width={200}
+          style={{
+            background: "#fff",
+            height: "100vh",
+            position: "fixed",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 10,
+            overflow: "auto",
+            borderRight: "1px solid #f0f0f0",
+          }}
+        >
+          <div className="logo text-center py-5 font-bold text-purple-600 text-xl">MyApp</div>
+          <Menu
+            mode="inline"
+            selectedKeys={[pathname]}
+            onClick={({ key }) => router.push(key)}
+            items={menuItems}
+          />
+        </Sider>
 
-        {/* Main layout */}
-        <div className="flex-1 flex flex-col">
 
-          {/* Header */}
-          <header className="bg-white border-b shadow-sm px-6 py-4 flex items-center justify-between relative">
-            <h1 className="text-lg font-semibold text-gray-800">{breadcrumb || "Dashboard"}</h1>
-            <div className="flex items-center gap-3 relative">
-              <span className="text-sm text-gray-600 hidden sm:block">{currentUser?.email}</span>
-
-              <img
-                onClick={toggleDropdown}
-                src={userInfo?.avatar_url || "/default-avatar.png"}
-                alt="avatar"
-                className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-purple-300 transition cursor-pointer"
-              />
-
-              {isDropdownOpen && (
-                <div className="absolute top-12 right-0 w-44 bg-white border rounded-md shadow-lg z-50">
-                  <Link
-                    href="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    href="#"
-                    className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleLogout();
-                      setIsDropdownOpen(false);
-                    }}
-                  >
-                    Logout
-                  </Link>
-                  <Link
-                    href="#"
-                    className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setIsDropdownOpen(false);
-                    }}
-                  >
-                    Close
-                  </Link>
-                </div>
-              )}
-
+        <Layout style={{ marginLeft: 200 }}>
+          <Header
+            style={{
+              background: "#fff",
+              padding: "0 24px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <Breadcrumb>
+                {breadcrumb.map((item, index) => (
+                  <Breadcrumb.Item key={index}>{item}</Breadcrumb.Item>
+                ))}
+              </Breadcrumb>
             </div>
-          </header>
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto p-6 bg-gray-50">{children}</main>
-        </div>
-      </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Text type="secondary" className="hidden sm:block">
+                {currentUser?.email}
+              </Text>
+              <Dropdown overlay={dropdownMenu} placement="bottomRight" trigger={["click"]}>
+                <Avatar
+                  size="large"
+                  src={userInfo?.avatar_url || "/default-avatar.png"}
+                  style={{ cursor: "pointer" }}
+                />
+              </Dropdown>
+            </div>
+          </Header>
+
+
+          <Content style={{ margin: "24px", padding: 24, background: "#f9f9f9" }}>
+            {children}
+          </Content>
+        </Layout>
+      </Layout>
     </AuthGuard>
   );
 }

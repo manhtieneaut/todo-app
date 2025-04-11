@@ -1,96 +1,40 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { fetchTasks, deleteTask, updateTaskStatus } from '@/api/taskApi';
-import { useTaskStore } from '../../../store/task';
+import { useState } from 'react';
+import { useTaskPage } from '@/hooks/useTaskPage';
+import { useTaskStore } from '@/store/task';
+import { Table, Button, Modal, Select } from 'antd';
+import { DeleteOutlined, ShareAltOutlined } from '@ant-design/icons';
 import AddTaskModal from './AddTaskModal';
 import ShareTaskModal from './ShareTaskModal';
-import { Task } from '../../../store/task';
-import { Table, Button, Modal, Select} from 'antd';
-import { DeleteOutlined, ShareAltOutlined } from '@ant-design/icons';
-import { toast } from 'sonner';
+import { Task } from '@/store/task';
 
 export default function TaskPage() {
   const tasks = useTaskStore((state) => state.tasks);
-  const setTasks = useTaskStore((state) => state.setTasks);
-  const removeTask = useTaskStore((state) => state.deleteTask);
+  const updateTaskStatus = useTaskStore((state) => state.updateTaskStatusInStore);
+  const deleteTask = useTaskStore((state) => state.removeTaskFromServer);
+
+  const { loading, error } = useTaskPage();
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareTaskId, setShareTaskId] = useState<string | null>(null);
 
   const STATUS_OPTIONS = ['chưa làm', 'đang làm', 'hoàn thành'];
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const tasks = await fetchTasks();
-        setTasks(tasks);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [setTasks]);
-
-  const handleChangeStatus = async (taskId: string, newStatus: string) => {
-    try {
-      await updateTaskStatus(taskId, newStatus);
-      setTasks(tasks.map(task =>
-        task.id === taskId ? { ...task, status: newStatus } : task
-      ));
-    } catch (error: any) {
-      toast.error(`Lỗi khi cập nhật trạng thái: ${error.message}`);
-    }
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa công việc này?");
-    if (!confirmDelete) return;
-
-    try {
-      await deleteTask(taskId);
-      removeTask(taskId);
-      setSelectedTask(null);
-      toast.success('Đã xóa công việc');
-    } catch (error: any) {
-      toast.error(`Lỗi khi xóa công việc: ${error.message}`);
-    }
-  };
-
-  const handleOpenModal = (task: Task) => {
-    setSelectedTask(task);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedTask(null);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Không có';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('vi-VN').format(date);
-  };
 
   const columns = [
     {
       title: 'Tiêu đề',
       dataIndex: 'title',
       render: (text: string, record: Task) => (
-        <a onClick={() => handleOpenModal(record)}>{text}</a>
+        <a onClick={() => setSelectedTask(record)}>{text}</a>
       ),
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
-      render: (text: string) => text || "Không có mô tả",
+      render: (text: string) => text || 'Không có mô tả',
     },
     {
       title: 'Trạng thái',
@@ -98,7 +42,7 @@ export default function TaskPage() {
       render: (status: string, record: Task) => (
         <Select
           value={status}
-          onChange={(value) => handleChangeStatus(record.id, value)}
+          onChange={(value) => updateTaskStatus(record.id, value)}
           style={{ width: 120 }}
         >
           {STATUS_OPTIONS.map((status) => (
@@ -112,17 +56,14 @@ export default function TaskPage() {
     {
       title: 'Thời hạn',
       dataIndex: 'due_date',
-      render: (date: string) => formatDate(date),
+      render: (date: string) =>
+        date ? new Intl.DateTimeFormat('vi-VN').format(new Date(date)) : 'Không có',
     },
     {
       title: 'Hành động',
-      render: (text: string, record: Task) => (
+      render: (_: any, record: Task) => (
         <div className="flex gap-2">
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDeleteTask(record.id)}
-          >
+          <Button danger icon={<DeleteOutlined />} onClick={() => deleteTask(record.id)}>
             Xóa
           </Button>
           <Button
@@ -153,37 +94,21 @@ export default function TaskPage() {
       <h1 className="text-3xl font-bold text-center mb-8">Danh sách công việc</h1>
 
       <div className="flex justify-end mb-4">
-        <Button
-          type="primary"
-          onClick={() => setIsModalOpen(true)}
-        >
+        <Button type="primary" onClick={() => setIsModalOpen(true)}>
           + Thêm Task
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={tasks}
-        rowKey="id"
-        loading={loading}
-        pagination={false}
-      />
+      <Table columns={columns} dataSource={tasks} rowKey="id" pagination={false} />
 
-      {/* Modal chi tiết công việc */}
       {selectedTask && (
-        <Modal
-          title={selectedTask.title}
-          open={!!selectedTask}
-          onCancel={handleCloseModal}
-          footer={null}
-        >
-          <p><strong>Mô tả:</strong> {selectedTask.description || "Không có mô tả"}</p>
+        <Modal title={selectedTask.title} open onCancel={() => setSelectedTask(null)} footer={null}>
+          <p><strong>Mô tả:</strong> {selectedTask.description || 'Không có mô tả'}</p>
           <p><strong>Trạng thái:</strong> {selectedTask.status}</p>
-          <p><strong>Thời hạn:</strong> {formatDate(selectedTask.due_date)}</p>
+          <p><strong>Thời hạn:</strong> {selectedTask.due_date}</p>
         </Modal>
       )}
 
-      {/* Modal chia sẻ công việc */}
       <ShareTaskModal
         taskId={shareTaskId}
         visible={isShareModalOpen}
@@ -193,7 +118,6 @@ export default function TaskPage() {
         }}
       />
 
-      {/* Modal thêm công việc */}
       {isModalOpen && <AddTaskModal onClose={() => setIsModalOpen(false)} />}
     </div>
   );

@@ -3,9 +3,8 @@
 import { useEffect } from 'react';
 import { Avatar, Button, Card, Form, Input, Spin, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import { updateUserInfo, uploadAvatar } from '../../../api/profileApi';
-import { useProfileStore } from '../../../store/profile';
-import { toast } from 'sonner';
+import { useProfileStore } from '@/store/profile';
+import { useProfileEffect } from '@/hooks/useProfileEffect';
 
 export default function ProfilePage() {
   const {
@@ -13,47 +12,13 @@ export default function ProfilePage() {
     loading,
     editMode,
     avatarFile,
-    setUserInfo,
-    toggleEditMode,
     setAvatarFile,
+    toggleEditMode,
+    handleSave,
   } = useProfileStore();
 
   const [form] = Form.useForm();
-
-  useEffect(() => {
-    if (userInfo) {
-      form.setFieldsValue({
-        full_name: userInfo.full_name,
-        phone: userInfo.phone,
-        dob: userInfo.dob,
-        gender: userInfo.gender,
-        bio: userInfo.bio,
-      });
-    }
-  }, [userInfo, form]);
-
-  const handleSave = async () => {
-    if (!userInfo) return;
-
-    let avatarUrl = userInfo.avatar_url;
-
-    try {
-      if (avatarFile) {
-        avatarUrl = await uploadAvatar(avatarFile);
-        if (!avatarUrl) throw new Error("Không thể upload avatar.");
-      }
-
-      const values = form.getFieldsValue();
-      await updateUserInfo(userInfo.id, { ...values, avatar_url: avatarUrl });
-
-      setUserInfo({ ...userInfo, ...values, avatar_url: avatarUrl });
-      setAvatarFile(null);
-      toggleEditMode();
-      toast.success("Cập nhật thông tin thành công!");
-    } catch (err: any) {
-      toast.error(err.message || "Lỗi khi cập nhật thông tin.");
-    }
-  };
+  useProfileEffect(form);
 
   if (loading) {
     return (
@@ -69,7 +34,7 @@ export default function ProfilePage() {
         title="Thông tin cá nhân"
         extra={
           <Button type="link" onClick={toggleEditMode}>
-            {editMode ? "Huỷ" : "Chỉnh sửa"}
+            {editMode ? 'Huỷ' : 'Chỉnh sửa'}
           </Button>
         }
       >
@@ -79,7 +44,7 @@ export default function ProfilePage() {
             src={
               avatarFile
                 ? URL.createObjectURL(avatarFile)
-                : userInfo?.avatar_url || "/default-avatar.png"
+                : userInfo?.avatar_url || '/default-avatar.png'
             }
           />
           {editMode && (
@@ -113,21 +78,20 @@ export default function ProfilePage() {
               <Form.Item name="bio" label="Tiểu sử">
                 <Input.TextArea placeholder="Nhập tiểu sử" rows={4} />
               </Form.Item>
-              <Button type="primary" onClick={handleSave}>
+              <Button type="primary" onClick={() => handleSave(form.getFieldsValue())}>
                 Lưu thay đổi
               </Button>
             </>
           ) : (
             <div className="space-y-4">
-              <p><strong>Họ và tên:</strong> {userInfo?.full_name || "Chưa cập nhật"}</p>
-              <p><strong>Số điện thoại:</strong> {userInfo?.phone || "Chưa cập nhật"}</p>
-              <p><strong>Ngày sinh:</strong> {userInfo?.dob || "Chưa cập nhật"}</p>
-              <p><strong>Giới tính:</strong> {userInfo?.gender || "Chưa cập nhật"}</p>
-              <p><strong>Tiểu sử:</strong> {userInfo?.bio || "Chưa cập nhật"}</p>
+              <p><strong>Họ và tên:</strong> {userInfo?.full_name || 'Chưa cập nhật'}</p>
+              <p><strong>Số điện thoại:</strong> {userInfo?.phone || 'Chưa cập nhật'}</p>
+              <p><strong>Ngày sinh:</strong> {userInfo?.dob || 'Chưa cập nhật'}</p>
+              <p><strong>Giới tính:</strong> {userInfo?.gender || 'Chưa cập nhật'}</p>
+              <p><strong>Tiểu sử:</strong> {userInfo?.bio || 'Chưa cập nhật'}</p>
             </div>
           )}
         </Form>
-
       </Card>
     </div>
   );

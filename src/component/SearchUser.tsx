@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient'; // Đảm bảo đường dẫn đúng với cấu trúc thư mục của bạn
+import { Input, List, Spin, Typography } from 'antd';
+import { supabase } from '@/lib/supabaseClient';
 
+const { Text } = Typography;
 
 interface User {
     id: string;
@@ -35,31 +37,38 @@ const SearchUser: React.FC<{ onSelect: (user: User) => void }> = ({ onSelect }) 
             setLoading(false);
         };
 
-        const debounceFetch = setTimeout(fetchUsers, 300); // Debounce for 300ms
+        const debounceFetch = setTimeout(fetchUsers, 300);
         return () => clearTimeout(debounceFetch);
     }, [query]);
 
     return (
         <div>
-            <input
-                type="text"
+            <Input
                 placeholder="Search by email..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="border p-2 w-full"
+                allowClear
+                size="large"
             />
-            {loading && <p>Loading...</p>}
-            <ul className="border mt-2">
-                {results.map((user) => (
-                    <li
-                        key={user.id}
-                        className="p-2 hover:bg-gray-200 cursor-pointer"
-                        onClick={() => onSelect(user)}
-                    >
-                        {user.email}
-                    </li>
-                ))}
-            </ul>
+            {loading ? (
+                <div className="mt-4 flex justify-center">
+                    <Spin tip="Loading..." />
+                </div>
+            ) : (
+                <List
+                    bordered
+                    dataSource={results}
+                    className="mt-4"
+                    renderItem={(user) => (
+                        <List.Item
+                            onClick={() => onSelect(user)}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <Text>{user.email}</Text>
+                        </List.Item>
+                    )}
+                />
+            )}
         </div>
     );
 };
