@@ -103,8 +103,13 @@ const ChatPage = () => {
           filter: `conversation_id=eq.${selectedConversation.id}`,
         },
         (payload) => {
-          addMessage(payload.new as Message);
-          scrollToBottom(); // ✅ Scroll khi có tin nhắn mới real-time
+          const newMsg = payload.new as Message;
+          addMessage(newMsg);
+          scrollToBottom();
+          
+          if (newMsg.sender_id !== currentUserId) {
+            toast.info('New message received');
+          }
         }
       )
       .subscribe();
