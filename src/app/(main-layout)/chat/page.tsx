@@ -62,7 +62,7 @@ const ChatPage = () => {
   };
 
   return (
-    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
+    <Layout style={{ height: '800px', overflow: 'hidden' }}>
       <Sider width={300} theme="light">
         <ConversationSidebar onCreateClick={() => setShowCreateModal(true)} />
       </Sider>
