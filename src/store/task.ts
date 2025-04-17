@@ -1,6 +1,6 @@
 // src/store/task.store.ts
 import { create } from 'zustand';
-import { fetchTasks, deleteTask, updateTaskStatus } from '@/api/taskApi';
+import { deleteTask, updateTaskStatus } from '@/api/taskApi';
 import { toast } from 'sonner';
 
 export interface Task {
@@ -16,27 +16,23 @@ interface TaskStore {
   setTasks: (tasks: Task[]) => void;
   addTask: (task: Task) => void;
   deleteTask: (taskId: string) => void;
-  fetchAndSetTasks: () => Promise<void>;
   updateTaskStatusInStore: (taskId: string, newStatus: string) => Promise<void>;
   removeTaskFromServer: (taskId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
-  setTasks: (tasks) => set({ tasks }),
-  addTask: (task) => set((state) => ({ tasks: [...state.tasks, task] })),
-  deleteTask: (taskId) =>
-    set((state) => ({ tasks: state.tasks.filter((task) => task.id !== taskId) })),
 
-  fetchAndSetTasks: async () => {
-    try {
-      const tasks = await fetchTasks();
-      set({ tasks });
-    } catch (err: any) {
-      toast.error('Không thể tải công việc');
-      throw err;
-    }
-  },
+  setTasks: (tasks) => set({ tasks }),
+
+  addTask: (task) => set((state) => ({
+    tasks: [...state.tasks, task],
+  })),
+
+  deleteTask: (taskId) =>
+    set((state) => ({
+      tasks: state.tasks.filter((task) => task.id !== taskId),
+    })),
 
   updateTaskStatusInStore: async (taskId, newStatus) => {
     try {

@@ -1,28 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Table,
-  Button,
-  Modal,
-  Select,
-  Typography,
-  Space,
-  Tag,
-  message,
-  Empty,
-} from 'antd';
-import {
-  DeleteOutlined,
-  ShareAltOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
-
+import { Table, Button, Modal, Select, Typography, Space, Tag, message, Empty } from 'antd';
+import { DeleteOutlined, ShareAltOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTaskPage } from '@/hooks/useTaskPage';
 import { useTaskStore } from '@/store/task';
-import { Task } from '@/store/task';
 import AddTaskModal from './AddTaskModal';
 import ShareTaskModal from './ShareTaskModal';
+import { Task } from '@/store/task';
 
 const { Title } = Typography;
 
@@ -30,7 +15,11 @@ export default function TaskPage() {
   const tasks = useTaskStore((state) => state.tasks);
   const updateTaskStatus = useTaskStore((state) => state.updateTaskStatusInStore);
   const deleteTask = useTaskStore((state) => state.removeTaskFromServer);
-  const { loading, error } = useTaskPage();
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 5;
+
+  const { loading, error, total } = useTaskPage(currentPage, limit);
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,7 +27,6 @@ export default function TaskPage() {
   const [shareTaskId, setShareTaskId] = useState<string | null>(null);
 
   const STATUS_OPTIONS = ['chưa làm', 'đang làm', 'hoàn thành'];
-
   const statusColor: { [key: string]: string } = {
     'chưa làm': 'default',
     'đang làm': 'processing',
@@ -85,11 +73,7 @@ export default function TaskPage() {
       title: 'Hành động',
       render: (_: any, record: Task) => (
         <Space>
-          <Button
-            onClick={() => setSelectedTask(record)}
-          >
-            Chi tiết
-          </Button>
+          <Button onClick={() => setSelectedTask(record)}>Chi tiết</Button>
           <Button
             danger
             icon={<DeleteOutlined />}
@@ -153,7 +137,13 @@ export default function TaskPage() {
           columns={columns}
           dataSource={tasks}
           rowKey="id"
-          pagination={{ pageSize: 6 }}
+          pagination={{
+            current: currentPage,
+            pageSize: limit,
+            total: total,
+            onChange: (page) => setCurrentPage(page),
+            showSizeChanger: false,
+          }}
           rowClassName="hover:bg-gray-100 transition"
         />
       ) : (

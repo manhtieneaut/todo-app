@@ -1,13 +1,18 @@
 import { supabase } from '@/lib/supabaseClient';
 
-export const fetchTasks = async () => {
-  const { data, error } = await supabase
+export const fetchTasks = async (page: number, limit: number) => {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  const { data, error, count } = await supabase
     .from("tasks")
-    .select('id, title, description, status, due_date');
+    .select('id, title, description, status, due_date', { count: 'exact' })
+    .range(from, to);
 
   if (error) throw error;
-  return data;
+  return { data, total: count || 0 };
 };
+
 
 export const addTask = async (task: any) => {
   const { data, error } = await supabase
