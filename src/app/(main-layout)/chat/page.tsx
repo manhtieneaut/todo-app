@@ -1,9 +1,10 @@
-'use client';
+"use client"
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Layout, List } from 'antd';
 import { supabase } from '@/lib/supabaseClient';
 import { useChatStore } from '@/store/chat';
+import { FilePdfOutlined, FileTextOutlined, PaperClipOutlined } from '@ant-design/icons'; // Import icons
 import ConversationSidebar from './ConversationSidebar';
 import ChatHeader from './ChatHeader';
 import MessageInput from './MessageInput';
@@ -80,31 +81,73 @@ const ChatPage = () => {
                 dataSource={messages}
                 renderItem={(msg) => {
                   const isOwn = msg.sender_id === currentUserId;
+                  const fileName = msg.file_url?.split('/').pop() || '';
+                  const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+                  const fileIcon = fileExt === 'pdf' ? <FilePdfOutlined /> : fileExt === 'doc' || fileExt === 'docx' ? <FileTextOutlined /> : <PaperClipOutlined />;
+
                   return (
-                    <List.Item style={{ justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
-                      <div
-                        style={{
-                          maxWidth: '60%',
-                          padding: '10px 16px',
-                          borderRadius: '16px',
-                          background: isOwn ? '#1890ff' : '#f5f5f5',
-                          color: isOwn ? '#fff' : '#000',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {msg.message && <p style={{ marginBottom: msg.file_url ? 8 : 0 }}>{msg.message}</p>}
-                        {msg.file_url && (
-                          <a
-                            href={supabase.storage.from('chat-files').getPublicUrl(msg.file_url).data.publicUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: isOwn ? '#fff' : '#1890ff', textDecoration: 'underline' }}
-                          >
-                            📎 {msg.file_url.split('/').pop()}
-                          </a>
-                        )}
-                      </div>
+                    <List.Item
+                      style={{
+                        justifyContent: isOwn ? 'flex-end' : 'flex-start',
+                        flexDirection: 'column',
+                        alignItems: isOwn ? 'flex-end' : 'flex-start',
+                      }}
+                    >
+                      {msg.message && (
+                        <div
+                          style={{
+                            maxWidth: '70%',
+                            padding: '12px 16px',
+                            borderRadius: '16px',
+                            background: isOwn ? '#1890ff' : '#f5f5f5',
+                            color: isOwn ? '#fff' : '#000',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                            wordBreak: 'break-word',
+                            marginBottom: msg.file_url ? '12px' : 0,
+                          }}
+                        >
+                          {msg.message}
+                        </div>
+                      )}
+
+                      {/* Hiển thị file đính kèm giống Zalo */}
+                      {msg.file_url && (
+                        <div
+                          style={{
+                            maxWidth: 'fit-content', // Giới hạn chiều rộng của thẻ file bằng chiều rộng của tên file
+                            display: 'inline-flex', // Để biểu tượng và văn bản không chiếm hết chiều ngang
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            background: '#f5f5f5',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                            wordBreak: 'break-word', // Đảm bảo không bị tràn chữ ra ngoài
+                          }}
+                        >
+                          <div style={{ fontSize: '22px', color: '#1890ff' }}>{fileIcon}</div>
+                          <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontWeight: 600, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {fileName}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>
+                              <a
+                                href={supabase.storage.from('chat-files').getPublicUrl(msg.file_url).data.publicUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: '#1890ff',
+                                  fontSize: '13px',
+                                  textDecoration: 'underline',
+                                }}
+                              >
+                                Tải xuống
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                     </List.Item>
                   );
                 }}

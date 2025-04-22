@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input, Button, Upload } from 'antd';
+import { Input, Button, Upload, Typography } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
+const { Text } = Typography;
 
 interface MessageInputProps {
   onSend: (message: string, file: File | null) => void;
@@ -30,11 +31,18 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSend }) => {
         onChange={(e) => setMessage(e.target.value)}
         style={{ marginBottom: '8px', borderRadius: '8px' }}
       />
+
+      {file && (
+        <div style={{ marginBottom: 8 }}>
+          <Text type="secondary">📎 File: {file.name}</Text>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
         <Upload
           beforeUpload={(file) => {
             setFile(file);
-            return false;
+            return false; // prevent auto upload
           }}
           showUploadList={false}
         >
